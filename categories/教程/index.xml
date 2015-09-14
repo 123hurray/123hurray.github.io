@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>教程 on RayXXZhang的博客</title>
-    <link>http://123hurray.github.io/categories/%E6%95%99%E7%A8%8B/</link>
+    <link>/categories/%E6%95%99%E7%A8%8B/</link>
     <description>Recent content in 教程 on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Mon, 14 Sep 2015 18:57:07 +0800</lastBuildDate>
-    <atom:link href="http://123hurray.github.io/categories/%E6%95%99%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="/categories/%E6%95%99%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>使用Hugo搭建博客</title>
-      <link>http://123hurray.github.io/2015/09/14/first/</link>
+      <link>/2015/09/14/first/</link>
       <pubDate>Mon, 14 Sep 2015 18:57:07 +0800</pubDate>
       
-      <guid>http://123hurray.github.io/2015/09/14/first/</guid>
+      <guid>/2015/09/14/first/</guid>
       <description>&lt;p&gt;终于下决心开个博客，之前试过一次，但是太懒，基本没写什么，而且懒得维护服务器。所以这次博客选择用静态页面的方法搭建，静态博客的好处是能专注于内容本身而不是服务器的维护工作。&lt;/p&gt;
 
 &lt;p&gt;假期花了两天时间完成了建立博客的前期准备工作，在此分享一下其中的心得体会：&lt;/p&gt;
