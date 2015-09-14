@@ -1,0 +1,353 @@
+
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+  <title>使用Hugo搭建博客</title>
+  <script src="http://123hurray.github.io/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="http://123hurray.github.io/bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-toolbar/paper-toolbar.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-item/paper-item.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-menu/paper-menu.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-button/paper-button.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-card/paper-card.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/iron-image/iron-image.html">
+  <link rel="stylesheet" href="http://123hurray.github.iocss/highlightjs-theme-github.css">
+  <style is="custom-style">
+    paper-item /deep/ .content {
+		width: 100%;
+	}
+    /deep/ ::-webkit-scrollbar-track {
+      background:transparent;
+    }
+
+    /deep/ ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    /deep/ ::-webkit-scrollbar-thumb {
+      background-color: var(--paper-light-blue-500);
+    }
+  
+  paper-card .summary {
+	clear:both;
+  }
+  .title .main {
+	float:left;
+	font-size: 20px;
+	margin-bottom:10px;
+	margin-right: 15px;
+  }
+  .title paper-button {
+	min-width: 0px;
+   }
+   paper-button.green {
+      color: var(--paper-green-500);
+      --paper-button-flat-focus-color: var(--paper-green-50);
+    }
+    paper-button.green:hover {
+      background: var(--paper-green-50);
+    }
+   .article .categories {
+	float:right;
+	margin-right: 10px;
+   }
+   .categories iron-icon, .tags iron-icon{
+	--iron-icon-height: 16px;
+    --iron-icon-width: 16px;
+  }
+  .categories,.tags {
+  
+	font-size:14px;
+  }
+  .title paper-button /deep/ paper-material{
+	padding: 0px;
+	font-size:14px;
+  }
+  paper-button.blue {
+      color: var(--paper-light-blue-500);
+      --paper-button-flat-focus-color: var(--paper-light-blue-50);
+    }
+	
+    paper-button.blue:hover {
+      background: var(--paper-light-blue-50);
+    }
+  a {
+	  color: inherit;
+	  text-decoration: none;
+	}
+	.article a {
+	  color: var(--paper-light-blue-500);
+	  text-decoration: underline;
+	}
+	.main.single {
+	  width:100%;
+	  font-size:30px;
+	  line-height:45px;
+	  margin: 30px 10px;
+	}
+   #articles {
+      @apply(--layout-vertical);
+      @apply(--center-justified);
+      margin-left: auto;
+      margin-right: auto;
+	  margin-top: 20px;
+    }
+	.tags /deep/ paper-material {
+		padding: 0px;
+	}
+	 paper-card {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .nav {
+      border-right: 1px solid #ccc;
+    }
+    
+    paper-scroll-header-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: var(--paper-grey-200, #eee);
+       
+      --paper-scroll-header-panel-full-header: {
+        background-image: url(http://123hurray.github.io/images/cover.png);
+      };
+       
+      --paper-scroll-header-panel-condensed-header: {
+        background-image: url(http://123hurray.github.io/images/cover.png);
+      };
+    }
+    
+    paper-toolbar {
+       
+      height: 256px;
+      background-color: transparent;
+    }
+    .profile{
+      width: 100%;
+      padding-bottom: 20px;
+    }
+    .photo{
+      margin: 20px;
+      display: inline-block;
+      height: 64px; width: 64px;
+      border-radius: 50%;
+    }
+    .article{
+      border: 1px solid #bebebe;
+      padding: 16px;
+      margin: 16px;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+	.toolbar-tools.paper-toolbar .title.bottom {
+		font-size: 40px;
+	}
+    .title.bottom.title{
+      padding: 8px 0 16px;
+    }
+    .article-body{
+      font-size: 16px;
+      padding-bottom: 8px;
+    }
+    .author{
+      font-size: 16px;
+      padding-left: 20px;
+      color: white;
+    }
+    .design{
+      font-size: 14px;
+    }
+    .copyright{
+      font-size: 16px;
+    }
+    paper-menu a {
+      text-decoration: none;
+      color: #212121;
+    }
+	.toolbar-tools.paper-toolbar .title {
+		pointer-events: initial;
+	}
+	  </style>
+	<link rel="stylesheet" href="http://123hurray.github.iocss/markdown.css">
+</head>
+<body>
+  <paper-drawer-panel id="drawerPanel" responsive-width="1280px">
+    <div class="nav scroll" drawer>
+    
+      <iron-image class="profile" sizing="cover" src="http://123hurray.github.io/images/profile.png">
+    
+        
+          <iron-image class="photo" sizing="cover" src="http://123hurray.github.io/images/photo.png"></iron-image>
+        
+          <div class="author">RayXXZhang</div>
+      </iron-image>
+      <paper-menu>
+        <a href="http://123hurray.github.io"><paper-item>
+          <iron-icon icon="home"></iron-icon>　<div class="flex">主页</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://123hurray.github.io/categories/"><paper-item>
+          <iron-icon icon="drafts"></iron-icon>　<div class="flex">分类</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://123hurray.github.io/tags/"><paper-item>
+          <iron-icon icon="loyalty"></iron-icon>　<div class="flex">标签</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+      </paper-menu>
+    </div>
+
+    <paper-scroll-header-panel main condenses header-height="256" condensed-header-height="64">
+
+      <paper-toolbar>
+
+        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+		<div class="bottom title"><a href="http://123hurray.github.io">RayXXZhang的博客</a></div>
+        
+        <div class="flex"></div>
+		
+			
+				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/weibo.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://github.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/github.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/facebook.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://123hurray.github.io/images/twitter.png"></paper-icon-button></a>
+			
+		
+		<a href="http://123hurray.github.io/index.xml"><paper-icon-button src="http://123hurray.github.io/images/feed.png"></paper-icon-button></a>
+      
+      </paper-toolbar>
+
+
+
+<paper-item>
+<div class="content">
+
+  <div class="article">
+    <div class="title"><div class="main single">使用Hugo搭建博客
+    
+      
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://123hurray.github.io/categories/%E6%95%99%E7%A8%8B/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>教程</paper-button></a>
+	
+</div>
+ 
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body"><p>终于下决心开个博客，之前试过一次，但是太懒，基本没写什么，而且懒得维护服务器。所以这次博客选择用静态页面的方法搭建，静态博客的好处是能专注于内容本身而不是服务器的维护工作。</p>
+
+<p>假期花了两天时间完成了建立博客的前期准备工作，在此分享一下其中的心得体会：</p>
+
+<p>博客的托管方面选择的是 <em>Github Pages</em> ， <em>Github Pages</em> 可以存放静态的网页，通常被用于架设开源项目的主页以及个人技术博客。
+搭建博客以及选择托管在Github上的主要是因为曾经听一个互联网创业公司的创始人说过，写博客是一种很好的习惯，可以记录下自己所学过的知识。这对未来的求职和工作都有帮助。
+而Github作为目前最大的开源社区，是技术交流的绝佳平台，相比于国内使用较多的CSDN博客及博客园，Github博客以Github的个人主页更能体现出一个人完整的技术水平。</p>
+
+<p>关于 <em>Github Pages</em> 的使用，官方有详细的<a href="https://help.github.com/categories/github-pages-basics/">教程</a>。
+官方推荐的架设博客的方式是使用<a href="https://github.com/jekyll/jekyll">Jekyll</a>，不过在看了网上一些对静态博客搭建软件的比较后（<a href="http://www.zhihu.com/question/20962496">如何在 GitHub 上写博客？</a>），最终决定使用Hugo作为搭建博客的工具。</p>
+
+<p><a href="http://gohugo.io/">Hugo</a>使用Golang开发，windows版本就一个exe文件，使用方便，并且Github上有许多Hugo的UI主体可供使用。</p>
+
+<p>在学习使用Hugo的过程中，参考了<a href="http://blog.coderzh.com/2015/08/29/hugo/">使用hugo搭建个人博客站点</a>这篇博文。作者比较详细的说明了如何使用Hugo搭建一个静态博客。
+在这里就不详细叙述了，有兴趣可以参考该博文。</p>
+
+<p>Hugo和Jekyll等软件一样也选择了markdown作为博文的写作格式，这点让我比较喜欢，markdown的写作能在生成比较优雅的外观的同时兼顾源文件的简洁，非常适合技术文章的使用。
+尝试了一下Hugo对markdown特性的支持，对标准markdown的支持很好，并且还支持部分<a href="https://help.github.com/articles/github-flavored-markdown/">Github flavored markdown</a>的特性。在此也归纳一下Github官方的markdown教程以便日后查询：</p>
+
+<ol>
+<li><a href="https://help.github.com/articles/markdown-basics/">Markdown basics</a></li>
+<li><a href="https://guides.github.com/features/mastering-markdown/">Mastering markdown</a></li>
+<li><a href="https://help.github.com/articles/github-flavored-markdown/">Github flavored markdown</a></li>
+</ol>
+
+<p>在Hugo主题选择方面，一个名为<a href="https://github.com/pdevty/polymer">Polymer</a>的主题让我眼前一亮。</p>
+
+<p><img src="https://github.com/pdevty/polymer/blob/master/images/tn.png?raw=true" alt="Hugo的Polymer主题" />
+</p>
+
+<p>从Polymer这个名字一眼就可以看出是来自Google的<a href="https://www.polymer-project.org/1.0/">Polymer项目</a>。
+作为这两年在Google I/O大会上提及的前端开发框架，它使用了许多新的技术，如web components，shadow DOM等等，把html的一些基础组件封装成了一些十分方便使用的控件，样式优雅开发简单。
+仔细看了一下Hugo的Polymer主题的外观以及逻辑，觉得还是有一些小问题需要改进的，比较明显的就是文章页导航按钮和底栏出现了错位。因此，我决定学习一下Google Polymer的使用方法并且把主题中的这些小错误改过来。</p>
+
+<p>通过对Google Polymer文档的学习以及Polymer主题源码的阅读和调试，找到发生错位的原因是 <code>layouts/partials/content.html</code> 文件中未将文章正文部分用 <code>&lt;paper-item&gt;</code> 标签包裹，而导航栏及底栏都使用了 <code>&lt;paper-item&gt;</code> 标签，
+因此导致了html的解析问题，使得正文部分的高度被忽略，所以原本应该显示在底部的底栏发生了显示上的错位。</p>
+
+<p>除此之外，还在主题上加入了各大网站个人主页链接的自定义排序功能，并且加上的新浪微博的图标。修改了 <strong>标签</strong> ， <strong>主题</strong> 两个页面，添加了自定义预设文本的选项，修改了字体大小等细节。
+由于修改基于从原项目folk出的新项目上，因此所有的修改都可以在<a href="https://github.com/123hurray/polymer/">github.com/123hurray/polymer</a>的提交记录看到。</p>
+
+<p>以上工作完成后，基本的准备工作就算结束了。随着这篇博文的发布，博客就算正式建立了。近期的博客发布计划主要是在Android开发中的一些心得及备忘，<a href="https://poj.org/">POJ</a>题目的解题心得等等。</p>
+</div>
+	
+	<hr style="clear:both;">
+	
+
+		<div class="tags">
+      <span>2015年9月14日</span>
+      
+        
+          <a href="http://123hurray.github.io/tags/hugo/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>Hugo</paper-button></a>
+        
+          <a href="http://123hurray.github.io/tags/polymer/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>Polymer</paper-button></a>
+        
+          <a href="http://123hurray.github.io/tags/markdown/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>markdown</paper-button></a>
+        
+       
+    </div>
+	
+  </div>
+
+</div>
+</paper-item>
+<paper-item>
+  
+    <a href="http://123hurray.github.io/2015/09/14/poj1002/"><paper-fab icon="chevron-left"></paper-fab></a>
+  
+    <div class="flex"></div>
+  
+    <paper-fab disabled icon="chevron-right"></paper-fab>
+  
+</paper-item>
+
+
+      <paper-item>
+        <div class="copyright">© 2015 Copyright RayXXZhang</div>
+        <div class="flex"></div>
+        <div class="design">Design <a href="http://pdevty.github.io/blog/">pdevty</a></div>
+      </paper-item>
+    </paper-scroll-header-panel>
+  </paper-drawer-panel>
+  <script src="http://123hurray.github.iojs/highlight.pack.js"></script>
+  <script>
+  hljs.configure({
+  tabReplace: '    ', 
+})
+  hljs.initHighlightingOnLoad();
+  </script>
+  
+</body>
+</html>
+

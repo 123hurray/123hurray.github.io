@@ -1,0 +1,627 @@
+
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+  <title>POJ1002解题报告</title>
+  <script src="http://123hurray.github.io/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="http://123hurray.github.io/bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-toolbar/paper-toolbar.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-item/paper-item.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-menu/paper-menu.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-button/paper-button.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-card/paper-card.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/iron-image/iron-image.html">
+  <link rel="stylesheet" href="http://123hurray.github.iocss/highlightjs-theme-github.css">
+  <style is="custom-style">
+    paper-item /deep/ .content {
+		width: 100%;
+	}
+    /deep/ ::-webkit-scrollbar-track {
+      background:transparent;
+    }
+
+    /deep/ ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    /deep/ ::-webkit-scrollbar-thumb {
+      background-color: var(--paper-light-blue-500);
+    }
+  
+  paper-card .summary {
+	clear:both;
+  }
+  .title .main {
+	float:left;
+	font-size: 20px;
+	margin-bottom:10px;
+	margin-right: 15px;
+  }
+  .title paper-button {
+	min-width: 0px;
+   }
+   paper-button.green {
+      color: var(--paper-green-500);
+      --paper-button-flat-focus-color: var(--paper-green-50);
+    }
+    paper-button.green:hover {
+      background: var(--paper-green-50);
+    }
+   .article .categories {
+	float:right;
+	margin-right: 10px;
+   }
+   .categories iron-icon, .tags iron-icon{
+	--iron-icon-height: 16px;
+    --iron-icon-width: 16px;
+  }
+  .categories,.tags {
+  
+	font-size:14px;
+  }
+  .title paper-button /deep/ paper-material{
+	padding: 0px;
+	font-size:14px;
+  }
+  paper-button.blue {
+      color: var(--paper-light-blue-500);
+      --paper-button-flat-focus-color: var(--paper-light-blue-50);
+    }
+	
+    paper-button.blue:hover {
+      background: var(--paper-light-blue-50);
+    }
+  a {
+	  color: inherit;
+	  text-decoration: none;
+	}
+	.article a {
+	  color: var(--paper-light-blue-500);
+	  text-decoration: underline;
+	}
+	.main.single {
+	  width:100%;
+	  font-size:30px;
+	  line-height:45px;
+	  margin: 30px 10px;
+	}
+   #articles {
+      @apply(--layout-vertical);
+      @apply(--center-justified);
+      margin-left: auto;
+      margin-right: auto;
+	  margin-top: 20px;
+    }
+	.tags /deep/ paper-material {
+		padding: 0px;
+	}
+	 paper-card {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .nav {
+      border-right: 1px solid #ccc;
+    }
+    
+    paper-scroll-header-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: var(--paper-grey-200, #eee);
+       
+      --paper-scroll-header-panel-full-header: {
+        background-image: url(http://123hurray.github.io/images/cover.png);
+      };
+       
+      --paper-scroll-header-panel-condensed-header: {
+        background-image: url(http://123hurray.github.io/images/cover.png);
+      };
+    }
+    
+    paper-toolbar {
+       
+      height: 256px;
+      background-color: transparent;
+    }
+    .profile{
+      width: 100%;
+      padding-bottom: 20px;
+    }
+    .photo{
+      margin: 20px;
+      display: inline-block;
+      height: 64px; width: 64px;
+      border-radius: 50%;
+    }
+    .article{
+      border: 1px solid #bebebe;
+      padding: 16px;
+      margin: 16px;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+	.toolbar-tools.paper-toolbar .title.bottom {
+		font-size: 40px;
+	}
+    .title.bottom.title{
+      padding: 8px 0 16px;
+    }
+    .article-body{
+      font-size: 16px;
+      padding-bottom: 8px;
+    }
+    .author{
+      font-size: 16px;
+      padding-left: 20px;
+      color: white;
+    }
+    .design{
+      font-size: 14px;
+    }
+    .copyright{
+      font-size: 16px;
+    }
+    paper-menu a {
+      text-decoration: none;
+      color: #212121;
+    }
+	.toolbar-tools.paper-toolbar .title {
+		pointer-events: initial;
+	}
+	  </style>
+	<link rel="stylesheet" href="http://123hurray.github.iocss/markdown.css">
+</head>
+<body>
+  <paper-drawer-panel id="drawerPanel" responsive-width="1280px">
+    <div class="nav scroll" drawer>
+    
+      <iron-image class="profile" sizing="cover" src="http://123hurray.github.io/images/profile.png">
+    
+        
+          <iron-image class="photo" sizing="cover" src="http://123hurray.github.io/images/photo.png"></iron-image>
+        
+          <div class="author">RayXXZhang</div>
+      </iron-image>
+      <paper-menu>
+        <a href="http://123hurray.github.io"><paper-item>
+          <iron-icon icon="home"></iron-icon>　<div class="flex">主页</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://123hurray.github.io/categories/"><paper-item>
+          <iron-icon icon="drafts"></iron-icon>　<div class="flex">分类</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://123hurray.github.io/tags/"><paper-item>
+          <iron-icon icon="loyalty"></iron-icon>　<div class="flex">标签</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+      </paper-menu>
+    </div>
+
+    <paper-scroll-header-panel main condenses header-height="256" condensed-header-height="64">
+
+      <paper-toolbar>
+
+        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+		<div class="bottom title"><a href="http://123hurray.github.io">RayXXZhang的博客</a></div>
+        
+        <div class="flex"></div>
+		
+			
+				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/weibo.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://github.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/github.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/facebook.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://123hurray.github.io/images/twitter.png"></paper-icon-button></a>
+			
+		
+		<a href="http://123hurray.github.io/index.xml"><paper-icon-button src="http://123hurray.github.io/images/feed.png"></paper-icon-button></a>
+      
+      </paper-toolbar>
+
+
+
+<paper-item>
+<div class="content">
+
+  <div class="article">
+    <div class="title"><div class="main single">POJ1002解题报告
+    
+      
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://123hurray.github.io/categories/poj/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>POJ</paper-button></a>
+	
+	  <a href="http://123hurray.github.io/categories/cpp/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>CPP</paper-button></a>
+	
+</div>
+ 
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body">
+
+<h1 id="题目概览:6d7d293e123cc03d5e3f5bc86e7610c3">题目概览</h1>
+
+<h2 id="标题:6d7d293e123cc03d5e3f5bc86e7610c3">标题</h2>
+
+<p>487-3279</p>
+
+<h2 id="要求:6d7d293e123cc03d5e3f5bc86e7610c3">要求</h2>
+
+<ul>
+<li><p>Time Limit: 2000MS</p></li>
+
+<li><p>Memory Limit: 65536K</p></li>
+</ul>
+
+<h2 id="题目描述:6d7d293e123cc03d5e3f5bc86e7610c3">题目描述</h2>
+
+<p>Businesses like to have memorable telephone numbers. One way to make a telephone number memorable is to have it spell a memorable word or phrase. For example, you can call the University of Waterloo by dialing the memorable TUT-GLOP. Sometimes only part of the number is used to spell a word. When you get back to your hotel tonight you can order a pizza from Gino&rsquo;s by dialing 310-GINO. Another way to make a telephone number memorable is to group the digits in a memorable way. You could order your pizza from Pizza Hut by calling their &lsquo;three tens&rsquo; number 3-10-10-10.</p>
+
+<p>The standard form of a telephone number is seven decimal digits with a hyphen between the third and fourth digits (e.g. 888-1200). The keypad of a phone supplies the mapping of letters to numbers, as follows:</p>
+
+<p>A, B, and C map to 2
+D, E, and F map to 3
+G, H, and I map to 4
+J, K, and L map to 5
+M, N, and O map to 6
+P, R, and S map to 7
+T, U, and V map to 8
+W, X, and Y map to 9</p>
+
+<p>There is no mapping for Q or Z. Hyphens are not dialed, and can be added and removed as necessary. The standard form of TUT-GLOP is 888-4567, the standard form of 310-GINO is 310-4466, and the standard form of 3-10-10-10 is 310-1010.</p>
+
+<p>Two telephone numbers are equivalent if they have the same standard form. (They dial the same number.)</p>
+
+<p>Your company is compiling a directory of telephone numbers from local businesses. As part of the quality control process you want to check that no two (or more) businesses in the directory have the same telephone number.</p>
+
+<h2 id="输入:6d7d293e123cc03d5e3f5bc86e7610c3">输入</h2>
+
+<p>The input will consist of one case. The first line of the input specifies the number of telephone numbers in the directory (up to 100,000) as a positive integer alone on the line. The remaining lines list the telephone numbers in the directory, with each number alone on a line. Each telephone number consists of a string composed of decimal digits, uppercase letters (excluding Q and Z) and hyphens. Exactly seven of the characters in the string will be digits or letters.</p>
+
+<h2 id="输出:6d7d293e123cc03d5e3f5bc86e7610c3">输出</h2>
+
+<p>Generate a line of output for each telephone number that appears more than once in any form. The line should give the telephone number in standard form, followed by a space, followed by the number of times the telephone number appears in the directory. Arrange the output lines by telephone number in ascending lexicographical order. If there are no duplicates in the input print the line:</p>
+
+<p>No duplicates.</p>
+
+<h2 id="输入示例:6d7d293e123cc03d5e3f5bc86e7610c3">输入示例</h2>
+
+<blockquote>
+<p>12</p>
+
+<p>4873279</p>
+
+<p>ITS-EASY</p>
+
+<p>888-4567</p>
+
+<p>3-10-10-10</p>
+
+<p>888-GLOP</p>
+
+<p>TUT-GLOP</p>
+
+<p>967-11-11</p>
+
+<p>310-GINO</p>
+
+<p>F101010</p>
+
+<p>888-1200</p>
+
+<p>-4-8-7-3-2-7-9-</p>
+
+<p>487-3279</p>
+</blockquote>
+
+<h2 id="输出示例:6d7d293e123cc03d5e3f5bc86e7610c3">输出示例</h2>
+
+<blockquote>
+<p>310-1010 2</p>
+
+<p>487-3279 4</p>
+
+<p>888-4567 3</p>
+</blockquote>
+
+<h1 id="解题报告:6d7d293e123cc03d5e3f5bc86e7610c3">解题报告</h1>
+
+<h2 id="分析:6d7d293e123cc03d5e3f5bc86e7610c3">分析</h2>
+
+<p>需要将输入还原成数字，可以有几种方法：</p>
+
+<ol>
+<li><p>可以构建字符和数字映射的哈希表：</p>
+
+<pre><code class="language-cpp">table['A'] = table['B'] = table['C'] = 1;
+...
+</code></pre></li>
+
+<li><p>可以使用 <code>switch</code> 语句：</p>
+
+<pre><code class="language-cpp">switch(oneChar) {
+    case 'A':
+    case 'B':
+    case 'C':
+        ...
+}
+</code></pre></li>
+</ol>
+
+<p>需要将解析出的数字放入哈希表或者数组中以便统计出现个数。如果使用C++的map，则最后输出时还能实现自动的排序。</p>
+
+<h2 id="c-的map容器学习:6d7d293e123cc03d5e3f5bc86e7610c3">C++的map容器学习</h2>
+
+<h3 id="头文件:6d7d293e123cc03d5e3f5bc86e7610c3">头文件</h3>
+
+<p>使用map需引用map头文件</p>
+
+<pre><code class="language-cpp">#include&lt;map&gt;
+</code></pre>
+
+<h3 id="声明:6d7d293e123cc03d5e3f5bc86e7610c3">声明</h3>
+
+<pre><code class="language-cpp">map&lt;int, string&gt; map1;
+</code></pre>
+
+<p>C++11前map的初始化只能通过[]下标操作或者insert函数实现，C++11引入了新的map初始化方式，可以通过如下方式进行初始化：</p>
+
+<pre><code class="language-cpp">map&lt;int, string&gt; map1 = {{1, &quot;A&quot;}, {2, &quot;B&quot;}};
+</code></pre>
+
+<h3 id="插入:6d7d293e123cc03d5e3f5bc86e7610c3">插入</h3>
+
+<p>插入操作可以使用[]下标操作或者insert函数。两者的区别是当要的键之前存在时，[]会更新原来的值，而insert则不会更新，并且返回值为 <code>false</code> 。</p>
+
+<p>insert有很多个重载，其中最常用的一个重载接受一个pair类型作为参数，可以使用 <code>make_pair</code> 来创建pair：</p>
+
+<pre><code class="language-cpp">map1.insert(make_pair(1, &quot;A&quot;));
+</code></pre>
+
+<p>C++11可以通过emplace函数添加新元素：</p>
+
+<pre><code class="language-cpp">map1.emplace(1, &quot;A&quot;);
+</code></pre>
+
+<h3 id="查找:6d7d293e123cc03d5e3f5bc86e7610c3">查找</h3>
+
+<p>查找通过find函数。find函数返回一个迭代器，通过判断迭代器是否为end来确认是否查找到了指定的元素：</p>
+
+<pre><code class="language-cpp">map&lt;int, string&gt;::iterator it = map1.find(1);
+if(it != map1.end()) {
+	// 找到相应元素	
+}
+</code></pre>
+
+<h3 id="访问:6d7d293e123cc03d5e3f5bc86e7610c3">访问</h3>
+
+<p>通过使用[]下标操作访问元素，c++11可以通过at函数来访问元素。</p>
+
+<p><strong>需要注意的一点是使用[]下标操作有副作用，即如果该键不存在，会在该键上插入一个有默认值的元素。</strong></p>
+
+<h3 id="删除:6d7d293e123cc03d5e3f5bc86e7610c3">删除</h3>
+
+<p>删除使用earse函数，传入要删除的键即可</p>
+
+<h3 id="遍历:6d7d293e123cc03d5e3f5bc86e7610c3">遍历</h3>
+
+<p>map通过迭代器遍历：</p>
+
+<pre><code class="language-cpp">for(map&lt;int, string&gt;::iterator it = map1.begin();it != map1.end(); ++it) {
+	// it-&gt;first 是键
+	// it-&gt;second 是值
+}
+</code></pre>
+
+<p>c++11还能通过以下方法遍历：</p>
+
+<pre><code class="language-cpp">for(auto it: map1) {
+	// it.first 是键
+	// it.second 是值
+}
+</code></pre>
+
+<h3 id="其他:6d7d293e123cc03d5e3f5bc86e7610c3">其他</h3>
+
+<p>其他函数及详细说明可以参考<a href="http://www.cplusplus.com/reference/map/map/">C++ map官方文档</a></p>
+
+<h2 id="poj的一些注意事项:6d7d293e123cc03d5e3f5bc86e7610c3">POJ的一些注意事项</h2>
+
+<h2 id="编译:6d7d293e123cc03d5e3f5bc86e7610c3">编译</h2>
+
+<p>C++的编译可以使用POJ提交选项中的C++或者G++编译器，其中C++是VC++的编译器，G++是GNU的编译器。两者均不支持C++11特性。
+有些题目使用C++能通过，但G++会超时，有时又相反，因此超时或内存占用过大的情况下可以试着换一下编译器。</p>
+
+<h2 id="io:6d7d293e123cc03d5e3f5bc86e7610c3">IO</h2>
+
+<p>C++的cin和cout的运行时间比C中的scanf和printf要长，容易超时。且在本题中按字符读取而不是按字符串读取必定超时（未验证，该说法来自<a href="http://blog.csdn.net/lyy289065406/article/details/6647348">POJ1002-487-3279</a>）</p>
+
+<h2 id="stl:6d7d293e123cc03d5e3f5bc86e7610c3">STL</h2>
+
+<p>使用STL效率会降低一些</p>
+
+<h1 id="源码:6d7d293e123cc03d5e3f5bc86e7610c3">源码</h1>
+
+<pre><code class="language-cpp">#include&lt;map&gt;
+#include&lt;string&gt;
+#include&lt;iostream&gt;
+#include&lt;iomanip&gt;
+using namespace std;
+class PhoneNumberList {
+public:
+	explicit PhoneNumberList() :numMap() { };
+	void add(string numStr) {
+		int number = parse(numStr);
+		map&lt;int, int&gt;::iterator it = numMap.find(number);
+		if (it == numMap.end()) {
+			numMap.insert(make_pair(number, 1));
+		}
+		else {
+			it-&gt;second++;
+		}
+
+	}
+	friend ostream &amp; operator&lt;&lt;(ostream &amp;os, PhoneNumberList &amp;list) {
+		bool duplicate = false;
+		for (map&lt;int, int&gt;::iterator i = list.numMap.begin(); i != list.numMap.end(); ++i) {
+			if (i-&gt;second != 1) {
+				os &lt;&lt; setfill('0') &lt;&lt; setfill('0') &lt;&lt; setw(3) &lt;&lt; i-&gt;first / 10000 &lt;&lt; &quot;-&quot; &lt;&lt; setfill('0') &lt;&lt; setw(4) &lt;&lt; i-&gt;first % 10000 &lt;&lt; &quot; &quot; &lt;&lt; i-&gt;second &lt;&lt; endl;
+				duplicate = true;
+			}
+		}
+		if (duplicate == false) {
+			os &lt;&lt; &quot;No duplicates.&quot; &lt;&lt; endl;
+		}
+		return os;
+	};
+private:
+	map&lt;int, int&gt; numMap;
+	int parse(string numStr) const {
+		int result = 0;
+		int length = numStr.length();
+		for (int i = 0; i &lt; length; ++i) {
+			char *c = &amp;numStr[i];
+			switch (*c) {
+			case 'A':
+			case 'B':
+			case 'C':
+				result = result * 10 + 2;
+				break;
+			case 'D':
+			case 'E':
+			case 'F':
+				result = result * 10 + 3;
+				break;
+			case 'G':
+			case 'H':
+			case 'I':
+				result = result * 10 + 4;
+				break;
+			case 'J':
+			case 'K':
+			case 'L':
+				result = result * 10 + 5;
+				break;
+			case 'M':
+			case 'N':
+			case 'O':
+				result = result * 10 + 6;
+				break;
+			case 'P':
+			case 'R':
+			case 'S':
+				result = result * 10 + 7;
+				break;
+			case 'T':
+			case 'U':
+			case 'V':
+				result = result * 10 + 8;
+				break;
+			case 'W':
+			case 'X':
+			case 'Y':
+				result = result * 10 + 9;
+				break;
+			default:
+				if (*c &gt;= '0' &amp;&amp; *c &lt;= '9') {
+					result = result * 10 + *c - '0';
+				}
+				break;
+			}
+		}
+		return result;
+	}
+};
+int main() {
+	int lines;
+	PhoneNumberList phoneNumberList;
+	cin &gt;&gt; lines;
+	string item;
+	for (int i = 0; i &lt; lines; ++i) {
+		cin &gt;&gt; item;
+		phoneNumberList.add(item);
+	}
+	cout &lt;&lt; phoneNumberList;
+}
+</code></pre>
+
+<h1 id="参考页面:6d7d293e123cc03d5e3f5bc86e7610c3">参考页面</h1>
+
+<p><a href="http://my.oschina.net/skyhacker2/blog/392832">C++11遍历map</a></p>
+
+<p><a href="http://blog.itpub.net/16856446/viewspace-626583/">C++ map[ ]=与insert操作不同</a></p>
+
+<p><a href="http://blog.csdn.net/liucanrui/article/details/6591029">C++学习之map类型</a></p>
+
+<p><a href="http://www.cplusplus.com/reference/map/map/">C++ map官方文档</a></p>
+</div>
+	
+	<hr style="clear:both;">
+	
+
+		<div class="tags">
+      <span>2015年9月14日</span>
+      
+        
+          <a href="http://123hurray.github.io/tags/map/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>map</paper-button></a>
+        
+       
+    </div>
+	
+  </div>
+
+</div>
+</paper-item>
+<paper-item>
+  
+    <a href="http://123hurray.github.io/2015/09/14/poj1003/"><paper-fab icon="chevron-left"></paper-fab></a>
+  
+    <div class="flex"></div>
+  
+    <a href="http://123hurray.github.io/2015/09/14/first/"><paper-fab icon="chevron-right"></paper-fab></a>
+  
+</paper-item>
+
+
+      <paper-item>
+        <div class="copyright">© 2015 Copyright RayXXZhang</div>
+        <div class="flex"></div>
+        <div class="design">Design <a href="http://pdevty.github.io/blog/">pdevty</a></div>
+      </paper-item>
+    </paper-scroll-header-panel>
+  </paper-drawer-panel>
+  <script src="http://123hurray.github.iojs/highlight.pack.js"></script>
+  <script>
+  hljs.configure({
+  tabReplace: '    ', 
+})
+  hljs.initHighlightingOnLoad();
+  </script>
+  
+</body>
+</html>
+

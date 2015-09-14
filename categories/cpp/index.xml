@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cpp on RayXXZhang的博客</title>
+    <link>http://123hurray.github.io/categories/cpp/</link>
+    <description>Recent content in Cpp on RayXXZhang的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>© 2015 Copyright RayXXZhang</copyright>
+    <lastBuildDate>Mon, 14 Sep 2015 21:35:12 +0800</lastBuildDate>
+    <atom:link href="http://123hurray.github.io/categories/cpp/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>POJ1003解题报告</title>
+      <link>http://123hurray.github.io/2015/09/14/poj1003/</link>
+      <pubDate>Mon, 14 Sep 2015 21:35:12 +0800</pubDate>
+      
+      <guid>http://123hurray.github.io/2015/09/14/poj1003/</guid>
+      <description>
+
+&lt;h1 id=&#34;题目概览:2e98549788b10e1ae8406221df07f9c6&#34;&gt;题目概览&lt;/h1&gt;
+
+&lt;h2 id=&#34;标题:2e98549788b10e1ae8406221df07f9c6&#34;&gt;标题&lt;/h2&gt;
+
+&lt;p&gt;487-3279&lt;/p&gt;
+
+&lt;h2 id=&#34;要求:2e98549788b10e1ae8406221df07f9c6&#34;&gt;要求&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Time Limit: 1000MS&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Memory Limit: 10000K&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;题目描述:2e98549788b10e1ae8406221df07f9c6&#34;&gt;题目描述&lt;/h2&gt;
+
+&lt;p&gt;How far can you make a stack of cards overhang a table? If you have one card, you can create a maximum overhang of half a card length. (We&amp;rsquo;re assuming that the cards must be perpendicular to the table.) With two cards you can make the top card overhang the bottom one by half a card length, and the bottom one overhang the table by a third of a card length, for a total maximum overhang of &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;2&lt;/sub&gt; + &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;3&lt;/sub&gt; = &lt;sup&gt;5&lt;/sup&gt;&amp;frasl;&lt;sub&gt;6&lt;/sub&gt; card lengths. In general you can make n cards overhang by &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;2&lt;/sub&gt; + &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;3&lt;/sub&gt; + &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;4&lt;/sub&gt; + &amp;hellip; + 1/(n + 1) card lengths, where the top card overhangs the second by &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;2&lt;/sub&gt;, the second overhangs tha third by &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;3&lt;/sub&gt;, the third overhangs the fourth by &lt;sup&gt;1&lt;/sup&gt;&amp;frasl;&lt;sub&gt;4&lt;/sub&gt;, etc., and the bottom card overhangs the table by 1/(n + 1). This is illustrated in the figure below.&lt;/p&gt;
+
+&lt;h2 id=&#34;输入:2e98549788b10e1ae8406221df07f9c6&#34;&gt;输入&lt;/h2&gt;
+
+&lt;p&gt;The input consists of one or more test cases, followed by a line containing the number 0.00 that signals the end of the input. Each test case is a single line containing a positive floating-point number c whose value is at least 0.01 and at most 5.20; c will contain exactly three digits.&lt;/p&gt;
+
+&lt;h2 id=&#34;输出:2e98549788b10e1ae8406221df07f9c6&#34;&gt;输出&lt;/h2&gt;
+
+&lt;p&gt;For each test case, output the minimum number of cards necessary to achieve an overhang of at least c card lengths. Use the exact output format shown in the examples.&lt;/p&gt;
+
+&lt;h2 id=&#34;输入示例:2e98549788b10e1ae8406221df07f9c6&#34;&gt;输入示例&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;1.00&lt;/p&gt;
+
+&lt;p&gt;3.71&lt;/p&gt;
+
+&lt;p&gt;0.04&lt;/p&gt;
+
+&lt;p&gt;5.19&lt;/p&gt;
+
+&lt;p&gt;0.00&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;输出示例:2e98549788b10e1ae8406221df07f9c6&#34;&gt;输出示例&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;3 card(s)&lt;/p&gt;
+
+&lt;p&gt;61 card(s)&lt;/p&gt;
+
+&lt;p&gt;1 card(s)&lt;/p&gt;
+
+&lt;p&gt;273 card(s)&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&#34;解题报告:2e98549788b10e1ae8406221df07f9c6&#34;&gt;解题报告&lt;/h1&gt;
+
+&lt;h2 id=&#34;分析:2e98549788b10e1ae8406221df07f9c6&#34;&gt;分析&lt;/h2&gt;
+
+&lt;p&gt;本题较简单，可以采用map+vector的方式提高效率，vector用于保存原始的数据顺序，map可以根据数据大小自动排序。&lt;/p&gt;
+
+&lt;p&gt;在计算的时候可以将每一步的计算结果与map的迭代器里的数比较，如果符合，则将取出map中的下一个数，这样能仅进行一遍计算就能得到全部结果。&lt;/p&gt;
+
+&lt;p&gt;最后输出的时候键的顺序采用vector里保存的顺序（即原始顺序），值则采用map中的值。&lt;/p&gt;
+
+&lt;h2 id=&#34;源码:2e98549788b10e1ae8406221df07f9c6&#34;&gt;源码&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;#include&amp;lt;map&amp;gt;
+#include&amp;lt;vector&amp;gt;
+#include&amp;lt;string&amp;gt;
+#include&amp;lt;iostream&amp;gt;
+using namespace std;
+int main() {
+    string item;
+    vector&amp;lt;double&amp;gt; input;
+    map&amp;lt;double, int&amp;gt; sorted;
+    double num;
+    while (true) {
+        cin &amp;gt;&amp;gt; item;
+        if (item == &amp;quot;0.00&amp;quot;) {
+            break;
+        }
+        num = item[0] - &#39;0&#39; + (item[2] - &#39;0&#39;) * 0.1 + (item[3] - &#39;0&#39;) * 0.01;
+        input.push_back(num);
+        sorted.insert(make_pair(num, 0));
+    }
+    double result = 0;
+    map&amp;lt;double, int&amp;gt;::iterator it = sorted.begin();
+    for (int i = 2; it != sorted.end(); ++i) {
+        result += 1.0 / i;
+        while (result &amp;gt; it-&amp;gt;first) {
+            it-&amp;gt;second = i - 1;
+            ++it;
+            if (it == sorted.end()) {
+                break;
+            }
+        }
+    }
+    for (vector&amp;lt;double&amp;gt;::iterator itv = input.begin(); itv != input.end(); ++itv) {
+        cout &amp;lt;&amp;lt; sorted[*itv] &amp;lt;&amp;lt; &amp;quot; card(s)&amp;quot; &amp;lt;&amp;lt; endl;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>POJ1002解题报告</title>
+      <link>http://123hurray.github.io/2015/09/14/poj1002/</link>
+      <pubDate>Mon, 14 Sep 2015 19:05:45 +0800</pubDate>
+      
+      <guid>http://123hurray.github.io/2015/09/14/poj1002/</guid>
+      <description>
+
+&lt;h1 id=&#34;题目概览:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;题目概览&lt;/h1&gt;
+
+&lt;h2 id=&#34;标题:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;标题&lt;/h2&gt;
+
+&lt;p&gt;487-3279&lt;/p&gt;
+
+&lt;h2 id=&#34;要求:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;要求&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Time Limit: 2000MS&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Memory Limit: 65536K&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;题目描述:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;题目描述&lt;/h2&gt;
+
+&lt;p&gt;Businesses like to have memorable telephone numbers. One way to make a telephone number memorable is to have it spell a memorable word or phrase. For example, you can call the University of Waterloo by dialing the memorable TUT-GLOP. Sometimes only part of the number is used to spell a word. When you get back to your hotel tonight you can order a pizza from Gino&amp;rsquo;s by dialing 310-GINO. Another way to make a telephone number memorable is to group the digits in a memorable way. You could order your pizza from Pizza Hut by calling their &amp;lsquo;three tens&amp;rsquo; number 3-10-10-10.&lt;/p&gt;
+
+&lt;p&gt;The standard form of a telephone number is seven decimal digits with a hyphen between the third and fourth digits (e.g. 888-1200). The keypad of a phone supplies the mapping of letters to numbers, as follows:&lt;/p&gt;
+
+&lt;p&gt;A, B, and C map to 2
+D, E, and F map to 3
+G, H, and I map to 4
+J, K, and L map to 5
+M, N, and O map to 6
+P, R, and S map to 7
+T, U, and V map to 8
+W, X, and Y map to 9&lt;/p&gt;
+
+&lt;p&gt;There is no mapping for Q or Z. Hyphens are not dialed, and can be added and removed as necessary. The standard form of TUT-GLOP is 888-4567, the standard form of 310-GINO is 310-4466, and the standard form of 3-10-10-10 is 310-1010.&lt;/p&gt;
+
+&lt;p&gt;Two telephone numbers are equivalent if they have the same standard form. (They dial the same number.)&lt;/p&gt;
+
+&lt;p&gt;Your company is compiling a directory of telephone numbers from local businesses. As part of the quality control process you want to check that no two (or more) businesses in the directory have the same telephone number.&lt;/p&gt;
+
+&lt;h2 id=&#34;输入:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;输入&lt;/h2&gt;
+
+&lt;p&gt;The input will consist of one case. The first line of the input specifies the number of telephone numbers in the directory (up to 100,000) as a positive integer alone on the line. The remaining lines list the telephone numbers in the directory, with each number alone on a line. Each telephone number consists of a string composed of decimal digits, uppercase letters (excluding Q and Z) and hyphens. Exactly seven of the characters in the string will be digits or letters.&lt;/p&gt;
+
+&lt;h2 id=&#34;输出:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;输出&lt;/h2&gt;
+
+&lt;p&gt;Generate a line of output for each telephone number that appears more than once in any form. The line should give the telephone number in standard form, followed by a space, followed by the number of times the telephone number appears in the directory. Arrange the output lines by telephone number in ascending lexicographical order. If there are no duplicates in the input print the line:&lt;/p&gt;
+
+&lt;p&gt;No duplicates.&lt;/p&gt;
+
+&lt;h2 id=&#34;输入示例:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;输入示例&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;12&lt;/p&gt;
+
+&lt;p&gt;4873279&lt;/p&gt;
+
+&lt;p&gt;ITS-EASY&lt;/p&gt;
+
+&lt;p&gt;888-4567&lt;/p&gt;
+
+&lt;p&gt;3-10-10-10&lt;/p&gt;
+
+&lt;p&gt;888-GLOP&lt;/p&gt;
+
+&lt;p&gt;TUT-GLOP&lt;/p&gt;
+
+&lt;p&gt;967-11-11&lt;/p&gt;
+
+&lt;p&gt;310-GINO&lt;/p&gt;
+
+&lt;p&gt;F101010&lt;/p&gt;
+
+&lt;p&gt;888-1200&lt;/p&gt;
+
+&lt;p&gt;-4-8-7-3-2-7-9-&lt;/p&gt;
+
+&lt;p&gt;487-3279&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;输出示例:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;输出示例&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;310-1010 2&lt;/p&gt;
+
+&lt;p&gt;487-3279 4&lt;/p&gt;
+
+&lt;p&gt;888-4567 3&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&#34;解题报告:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;解题报告&lt;/h1&gt;
+
+&lt;h2 id=&#34;分析:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;分析&lt;/h2&gt;
+
+&lt;p&gt;需要将输入还原成数字，可以有几种方法：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;可以构建字符和数字映射的哈希表：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;table[&#39;A&#39;] = table[&#39;B&#39;] = table[&#39;C&#39;] = 1;
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;可以使用 &lt;code&gt;switch&lt;/code&gt; 语句：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;switch(oneChar) {
+    case &#39;A&#39;:
+    case &#39;B&#39;:
+    case &#39;C&#39;:
+        ...
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;需要将解析出的数字放入哈希表或者数组中以便统计出现个数。如果使用C++的map，则最后输出时还能实现自动的排序。&lt;/p&gt;
+
+&lt;h2 id=&#34;c-的map容器学习:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;C++的map容器学习&lt;/h2&gt;
+
+&lt;h3 id=&#34;头文件:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;头文件&lt;/h3&gt;
+
+&lt;p&gt;使用map需引用map头文件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;#include&amp;lt;map&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;声明:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;声明&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;map&amp;lt;int, string&amp;gt; map1;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;C++11前map的初始化只能通过[]下标操作或者insert函数实现，C++11引入了新的map初始化方式，可以通过如下方式进行初始化：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;map&amp;lt;int, string&amp;gt; map1 = {{1, &amp;quot;A&amp;quot;}, {2, &amp;quot;B&amp;quot;}};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;插入:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;插入&lt;/h3&gt;
+
+&lt;p&gt;插入操作可以使用[]下标操作或者insert函数。两者的区别是当要的键之前存在时，[]会更新原来的值，而insert则不会更新，并且返回值为 &lt;code&gt;false&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;insert有很多个重载，其中最常用的一个重载接受一个pair类型作为参数，可以使用 &lt;code&gt;make_pair&lt;/code&gt; 来创建pair：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;map1.insert(make_pair(1, &amp;quot;A&amp;quot;));
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;C++11可以通过emplace函数添加新元素：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;map1.emplace(1, &amp;quot;A&amp;quot;);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;查找:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;查找&lt;/h3&gt;
+
+&lt;p&gt;查找通过find函数。find函数返回一个迭代器，通过判断迭代器是否为end来确认是否查找到了指定的元素：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;map&amp;lt;int, string&amp;gt;::iterator it = map1.find(1);
+if(it != map1.end()) {
+	// 找到相应元素	
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;访问:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;访问&lt;/h3&gt;
+
+&lt;p&gt;通过使用[]下标操作访问元素，c++11可以通过at函数来访问元素。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;需要注意的一点是使用[]下标操作有副作用，即如果该键不存在，会在该键上插入一个有默认值的元素。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;删除:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;删除&lt;/h3&gt;
+
+&lt;p&gt;删除使用earse函数，传入要删除的键即可&lt;/p&gt;
+
+&lt;h3 id=&#34;遍历:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;遍历&lt;/h3&gt;
+
+&lt;p&gt;map通过迭代器遍历：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;for(map&amp;lt;int, string&amp;gt;::iterator it = map1.begin();it != map1.end(); ++it) {
+	// it-&amp;gt;first 是键
+	// it-&amp;gt;second 是值
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;c++11还能通过以下方法遍历：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;for(auto it: map1) {
+	// it.first 是键
+	// it.second 是值
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;其他:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;其他&lt;/h3&gt;
+
+&lt;p&gt;其他函数及详细说明可以参考&lt;a href=&#34;http://www.cplusplus.com/reference/map/map/&#34;&gt;C++ map官方文档&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;poj的一些注意事项:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;POJ的一些注意事项&lt;/h2&gt;
+
+&lt;h2 id=&#34;编译:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;编译&lt;/h2&gt;
+
+&lt;p&gt;C++的编译可以使用POJ提交选项中的C++或者G++编译器，其中C++是VC++的编译器，G++是GNU的编译器。两者均不支持C++11特性。
+有些题目使用C++能通过，但G++会超时，有时又相反，因此超时或内存占用过大的情况下可以试着换一下编译器。&lt;/p&gt;
+
+&lt;h2 id=&#34;io:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;IO&lt;/h2&gt;
+
+&lt;p&gt;C++的cin和cout的运行时间比C中的scanf和printf要长，容易超时。且在本题中按字符读取而不是按字符串读取必定超时（未验证，该说法来自&lt;a href=&#34;http://blog.csdn.net/lyy289065406/article/details/6647348&#34;&gt;POJ1002-487-3279&lt;/a&gt;）&lt;/p&gt;
+
+&lt;h2 id=&#34;stl:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;STL&lt;/h2&gt;
+
+&lt;p&gt;使用STL效率会降低一些&lt;/p&gt;
+
+&lt;h1 id=&#34;源码:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;源码&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;#include&amp;lt;map&amp;gt;
+#include&amp;lt;string&amp;gt;
+#include&amp;lt;iostream&amp;gt;
+#include&amp;lt;iomanip&amp;gt;
+using namespace std;
+class PhoneNumberList {
+public:
+	explicit PhoneNumberList() :numMap() { };
+	void add(string numStr) {
+		int number = parse(numStr);
+		map&amp;lt;int, int&amp;gt;::iterator it = numMap.find(number);
+		if (it == numMap.end()) {
+			numMap.insert(make_pair(number, 1));
+		}
+		else {
+			it-&amp;gt;second++;
+		}
+
+	}
+	friend ostream &amp;amp; operator&amp;lt;&amp;lt;(ostream &amp;amp;os, PhoneNumberList &amp;amp;list) {
+		bool duplicate = false;
+		for (map&amp;lt;int, int&amp;gt;::iterator i = list.numMap.begin(); i != list.numMap.end(); ++i) {
+			if (i-&amp;gt;second != 1) {
+				os &amp;lt;&amp;lt; setfill(&#39;0&#39;) &amp;lt;&amp;lt; setfill(&#39;0&#39;) &amp;lt;&amp;lt; setw(3) &amp;lt;&amp;lt; i-&amp;gt;first / 10000 &amp;lt;&amp;lt; &amp;quot;-&amp;quot; &amp;lt;&amp;lt; setfill(&#39;0&#39;) &amp;lt;&amp;lt; setw(4) &amp;lt;&amp;lt; i-&amp;gt;first % 10000 &amp;lt;&amp;lt; &amp;quot; &amp;quot; &amp;lt;&amp;lt; i-&amp;gt;second &amp;lt;&amp;lt; endl;
+				duplicate = true;
+			}
+		}
+		if (duplicate == false) {
+			os &amp;lt;&amp;lt; &amp;quot;No duplicates.&amp;quot; &amp;lt;&amp;lt; endl;
+		}
+		return os;
+	};
+private:
+	map&amp;lt;int, int&amp;gt; numMap;
+	int parse(string numStr) const {
+		int result = 0;
+		int length = numStr.length();
+		for (int i = 0; i &amp;lt; length; ++i) {
+			char *c = &amp;amp;numStr[i];
+			switch (*c) {
+			case &#39;A&#39;:
+			case &#39;B&#39;:
+			case &#39;C&#39;:
+				result = result * 10 + 2;
+				break;
+			case &#39;D&#39;:
+			case &#39;E&#39;:
+			case &#39;F&#39;:
+				result = result * 10 + 3;
+				break;
+			case &#39;G&#39;:
+			case &#39;H&#39;:
+			case &#39;I&#39;:
+				result = result * 10 + 4;
+				break;
+			case &#39;J&#39;:
+			case &#39;K&#39;:
+			case &#39;L&#39;:
+				result = result * 10 + 5;
+				break;
+			case &#39;M&#39;:
+			case &#39;N&#39;:
+			case &#39;O&#39;:
+				result = result * 10 + 6;
+				break;
+			case &#39;P&#39;:
+			case &#39;R&#39;:
+			case &#39;S&#39;:
+				result = result * 10 + 7;
+				break;
+			case &#39;T&#39;:
+			case &#39;U&#39;:
+			case &#39;V&#39;:
+				result = result * 10 + 8;
+				break;
+			case &#39;W&#39;:
+			case &#39;X&#39;:
+			case &#39;Y&#39;:
+				result = result * 10 + 9;
+				break;
+			default:
+				if (*c &amp;gt;= &#39;0&#39; &amp;amp;&amp;amp; *c &amp;lt;= &#39;9&#39;) {
+					result = result * 10 + *c - &#39;0&#39;;
+				}
+				break;
+			}
+		}
+		return result;
+	}
+};
+int main() {
+	int lines;
+	PhoneNumberList phoneNumberList;
+	cin &amp;gt;&amp;gt; lines;
+	string item;
+	for (int i = 0; i &amp;lt; lines; ++i) {
+		cin &amp;gt;&amp;gt; item;
+		phoneNumberList.add(item);
+	}
+	cout &amp;lt;&amp;lt; phoneNumberList;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h1 id=&#34;参考页面:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;参考页面&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://my.oschina.net/skyhacker2/blog/392832&#34;&gt;C++11遍历map&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://blog.itpub.net/16856446/viewspace-626583/&#34;&gt;C++ map[ ]=与insert操作不同&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://blog.csdn.net/liucanrui/article/details/6591029&#34;&gt;C++学习之map类型&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://www.cplusplus.com/reference/map/map/&#34;&gt;C++ map官方文档&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

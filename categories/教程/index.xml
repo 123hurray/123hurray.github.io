@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>教程 on RayXXZhang的博客</title>
+    <link>http://123hurray.github.io/categories/%E6%95%99%E7%A8%8B/</link>
+    <description>Recent content in 教程 on RayXXZhang的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>© 2015 Copyright RayXXZhang</copyright>
+    <lastBuildDate>Mon, 14 Sep 2015 18:57:07 +0800</lastBuildDate>
+    <atom:link href="http://123hurray.github.io/categories/%E6%95%99%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>使用Hugo搭建博客</title>
+      <link>http://123hurray.github.io/2015/09/14/first/</link>
+      <pubDate>Mon, 14 Sep 2015 18:57:07 +0800</pubDate>
+      
+      <guid>http://123hurray.github.io/2015/09/14/first/</guid>
+      <description>&lt;p&gt;终于下决心开个博客，之前试过一次，但是太懒，基本没写什么，而且懒得维护服务器。所以这次博客选择用静态页面的方法搭建，静态博客的好处是能专注于内容本身而不是服务器的维护工作。&lt;/p&gt;
+
+&lt;p&gt;假期花了两天时间完成了建立博客的前期准备工作，在此分享一下其中的心得体会：&lt;/p&gt;
+
+&lt;p&gt;博客的托管方面选择的是 &lt;em&gt;Github Pages&lt;/em&gt; ， &lt;em&gt;Github Pages&lt;/em&gt; 可以存放静态的网页，通常被用于架设开源项目的主页以及个人技术博客。
+搭建博客以及选择托管在Github上的主要是因为曾经听一个互联网创业公司的创始人说过，写博客是一种很好的习惯，可以记录下自己所学过的知识。这对未来的求职和工作都有帮助。
+而Github作为目前最大的开源社区，是技术交流的绝佳平台，相比于国内使用较多的CSDN博客及博客园，Github博客以Github的个人主页更能体现出一个人完整的技术水平。&lt;/p&gt;
+
+&lt;p&gt;关于 &lt;em&gt;Github Pages&lt;/em&gt; 的使用，官方有详细的&lt;a href=&#34;https://help.github.com/categories/github-pages-basics/&#34;&gt;教程&lt;/a&gt;。
+官方推荐的架设博客的方式是使用&lt;a href=&#34;https://github.com/jekyll/jekyll&#34;&gt;Jekyll&lt;/a&gt;，不过在看了网上一些对静态博客搭建软件的比较后（&lt;a href=&#34;http://www.zhihu.com/question/20962496&#34;&gt;如何在 GitHub 上写博客？&lt;/a&gt;），最终决定使用Hugo作为搭建博客的工具。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://gohugo.io/&#34;&gt;Hugo&lt;/a&gt;使用Golang开发，windows版本就一个exe文件，使用方便，并且Github上有许多Hugo的UI主体可供使用。&lt;/p&gt;
+
+&lt;p&gt;在学习使用Hugo的过程中，参考了&lt;a href=&#34;http://blog.coderzh.com/2015/08/29/hugo/&#34;&gt;使用hugo搭建个人博客站点&lt;/a&gt;这篇博文。作者比较详细的说明了如何使用Hugo搭建一个静态博客。
+在这里就不详细叙述了，有兴趣可以参考该博文。&lt;/p&gt;
+
+&lt;p&gt;Hugo和Jekyll等软件一样也选择了markdown作为博文的写作格式，这点让我比较喜欢，markdown的写作能在生成比较优雅的外观的同时兼顾源文件的简洁，非常适合技术文章的使用。
+尝试了一下Hugo对markdown特性的支持，对标准markdown的支持很好，并且还支持部分&lt;a href=&#34;https://help.github.com/articles/github-flavored-markdown/&#34;&gt;Github flavored markdown&lt;/a&gt;的特性。在此也归纳一下Github官方的markdown教程以便日后查询：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&#34;https://help.github.com/articles/markdown-basics/&#34;&gt;Markdown basics&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://guides.github.com/features/mastering-markdown/&#34;&gt;Mastering markdown&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://help.github.com/articles/github-flavored-markdown/&#34;&gt;Github flavored markdown&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;在Hugo主题选择方面，一个名为&lt;a href=&#34;https://github.com/pdevty/polymer&#34;&gt;Polymer&lt;/a&gt;的主题让我眼前一亮。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://github.com/pdevty/polymer/blob/master/images/tn.png?raw=true&#34; alt=&#34;Hugo的Polymer主题&#34; /&gt;
+&lt;/p&gt;
+
+&lt;p&gt;从Polymer这个名字一眼就可以看出是来自Google的&lt;a href=&#34;https://www.polymer-project.org/1.0/&#34;&gt;Polymer项目&lt;/a&gt;。
+作为这两年在Google I/O大会上提及的前端开发框架，它使用了许多新的技术，如web components，shadow DOM等等，把html的一些基础组件封装成了一些十分方便使用的控件，样式优雅开发简单。
+仔细看了一下Hugo的Polymer主题的外观以及逻辑，觉得还是有一些小问题需要改进的，比较明显的就是文章页导航按钮和底栏出现了错位。因此，我决定学习一下Google Polymer的使用方法并且把主题中的这些小错误改过来。&lt;/p&gt;
+
+&lt;p&gt;通过对Google Polymer文档的学习以及Polymer主题源码的阅读和调试，找到发生错位的原因是 &lt;code&gt;layouts/partials/content.html&lt;/code&gt; 文件中未将文章正文部分用 &lt;code&gt;&amp;lt;paper-item&amp;gt;&lt;/code&gt; 标签包裹，而导航栏及底栏都使用了 &lt;code&gt;&amp;lt;paper-item&amp;gt;&lt;/code&gt; 标签，
+因此导致了html的解析问题，使得正文部分的高度被忽略，所以原本应该显示在底部的底栏发生了显示上的错位。&lt;/p&gt;
+
+&lt;p&gt;除此之外，还在主题上加入了各大网站个人主页链接的自定义排序功能，并且加上的新浪微博的图标。修改了 &lt;strong&gt;标签&lt;/strong&gt; ， &lt;strong&gt;主题&lt;/strong&gt; 两个页面，添加了自定义预设文本的选项，修改了字体大小等细节。
+由于修改基于从原项目folk出的新项目上，因此所有的修改都可以在&lt;a href=&#34;https://github.com/123hurray/polymer/&#34;&gt;github.com/123hurray/polymer&lt;/a&gt;的提交记录看到。&lt;/p&gt;
+
+&lt;p&gt;以上工作完成后，基本的准备工作就算结束了。随着这篇博文的发布，博客就算正式建立了。近期的博客发布计划主要是在Android开发中的一些心得及备忘，&lt;a href=&#34;https://poj.org/&#34;&gt;POJ&lt;/a&gt;题目的解题心得等等。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

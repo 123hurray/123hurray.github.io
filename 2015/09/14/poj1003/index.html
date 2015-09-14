@@ -1,0 +1,408 @@
+
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+  <title>POJ1003解题报告</title>
+  <script src="http://123hurray.github.io/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="http://123hurray.github.io/bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-toolbar/paper-toolbar.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-item/paper-item.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-menu/paper-menu.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-button/paper-button.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/paper-card/paper-card.html">
+  <link rel="import" href="http://123hurray.github.io/bower_components/iron-image/iron-image.html">
+  <link rel="stylesheet" href="http://123hurray.github.iocss/highlightjs-theme-github.css">
+  <style is="custom-style">
+    paper-item /deep/ .content {
+		width: 100%;
+	}
+    /deep/ ::-webkit-scrollbar-track {
+      background:transparent;
+    }
+
+    /deep/ ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    /deep/ ::-webkit-scrollbar-thumb {
+      background-color: var(--paper-light-blue-500);
+    }
+  
+  paper-card .summary {
+	clear:both;
+  }
+  .title .main {
+	float:left;
+	font-size: 20px;
+	margin-bottom:10px;
+	margin-right: 15px;
+  }
+  .title paper-button {
+	min-width: 0px;
+   }
+   paper-button.green {
+      color: var(--paper-green-500);
+      --paper-button-flat-focus-color: var(--paper-green-50);
+    }
+    paper-button.green:hover {
+      background: var(--paper-green-50);
+    }
+   .article .categories {
+	float:right;
+	margin-right: 10px;
+   }
+   .categories iron-icon, .tags iron-icon{
+	--iron-icon-height: 16px;
+    --iron-icon-width: 16px;
+  }
+  .categories,.tags {
+  
+	font-size:14px;
+  }
+  .title paper-button /deep/ paper-material{
+	padding: 0px;
+	font-size:14px;
+  }
+  paper-button.blue {
+      color: var(--paper-light-blue-500);
+      --paper-button-flat-focus-color: var(--paper-light-blue-50);
+    }
+	
+    paper-button.blue:hover {
+      background: var(--paper-light-blue-50);
+    }
+  a {
+	  color: inherit;
+	  text-decoration: none;
+	}
+	.article a {
+	  color: var(--paper-light-blue-500);
+	  text-decoration: underline;
+	}
+	.main.single {
+	  width:100%;
+	  font-size:30px;
+	  line-height:45px;
+	  margin: 30px 10px;
+	}
+   #articles {
+      @apply(--layout-vertical);
+      @apply(--center-justified);
+      margin-left: auto;
+      margin-right: auto;
+	  margin-top: 20px;
+    }
+	.tags /deep/ paper-material {
+		padding: 0px;
+	}
+	 paper-card {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .nav {
+      border-right: 1px solid #ccc;
+    }
+    
+    paper-scroll-header-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: var(--paper-grey-200, #eee);
+       
+      --paper-scroll-header-panel-full-header: {
+        background-image: url(http://123hurray.github.io/images/cover.png);
+      };
+       
+      --paper-scroll-header-panel-condensed-header: {
+        background-image: url(http://123hurray.github.io/images/cover.png);
+      };
+    }
+    
+    paper-toolbar {
+       
+      height: 256px;
+      background-color: transparent;
+    }
+    .profile{
+      width: 100%;
+      padding-bottom: 20px;
+    }
+    .photo{
+      margin: 20px;
+      display: inline-block;
+      height: 64px; width: 64px;
+      border-radius: 50%;
+    }
+    .article{
+      border: 1px solid #bebebe;
+      padding: 16px;
+      margin: 16px;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+	.toolbar-tools.paper-toolbar .title.bottom {
+		font-size: 40px;
+	}
+    .title.bottom.title{
+      padding: 8px 0 16px;
+    }
+    .article-body{
+      font-size: 16px;
+      padding-bottom: 8px;
+    }
+    .author{
+      font-size: 16px;
+      padding-left: 20px;
+      color: white;
+    }
+    .design{
+      font-size: 14px;
+    }
+    .copyright{
+      font-size: 16px;
+    }
+    paper-menu a {
+      text-decoration: none;
+      color: #212121;
+    }
+	.toolbar-tools.paper-toolbar .title {
+		pointer-events: initial;
+	}
+	  </style>
+	<link rel="stylesheet" href="http://123hurray.github.iocss/markdown.css">
+</head>
+<body>
+  <paper-drawer-panel id="drawerPanel" responsive-width="1280px">
+    <div class="nav scroll" drawer>
+    
+      <iron-image class="profile" sizing="cover" src="http://123hurray.github.io/images/profile.png">
+    
+        
+          <iron-image class="photo" sizing="cover" src="http://123hurray.github.io/images/photo.png"></iron-image>
+        
+          <div class="author">RayXXZhang</div>
+      </iron-image>
+      <paper-menu>
+        <a href="http://123hurray.github.io"><paper-item>
+          <iron-icon icon="home"></iron-icon>　<div class="flex">主页</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://123hurray.github.io/categories/"><paper-item>
+          <iron-icon icon="drafts"></iron-icon>　<div class="flex">分类</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://123hurray.github.io/tags/"><paper-item>
+          <iron-icon icon="loyalty"></iron-icon>　<div class="flex">标签</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+      </paper-menu>
+    </div>
+
+    <paper-scroll-header-panel main condenses header-height="256" condensed-header-height="64">
+
+      <paper-toolbar>
+
+        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+		<div class="bottom title"><a href="http://123hurray.github.io">RayXXZhang的博客</a></div>
+        
+        <div class="flex"></div>
+		
+			
+				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/weibo.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://github.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/github.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://123hurray.github.io/images/facebook.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://123hurray.github.io/images/twitter.png"></paper-icon-button></a>
+			
+		
+		<a href="http://123hurray.github.io/index.xml"><paper-icon-button src="http://123hurray.github.io/images/feed.png"></paper-icon-button></a>
+      
+      </paper-toolbar>
+
+
+
+<paper-item>
+<div class="content">
+
+  <div class="article">
+    <div class="title"><div class="main single">POJ1003解题报告
+    
+      
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://123hurray.github.io/categories/poj/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>POJ</paper-button></a>
+	
+	  <a href="http://123hurray.github.io/categories/cpp/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>CPP</paper-button></a>
+	
+</div>
+ 
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body">
+
+<h1 id="题目概览:2e98549788b10e1ae8406221df07f9c6">题目概览</h1>
+
+<h2 id="标题:2e98549788b10e1ae8406221df07f9c6">标题</h2>
+
+<p>487-3279</p>
+
+<h2 id="要求:2e98549788b10e1ae8406221df07f9c6">要求</h2>
+
+<ul>
+<li><p>Time Limit: 1000MS</p></li>
+
+<li><p>Memory Limit: 10000K</p></li>
+</ul>
+
+<h2 id="题目描述:2e98549788b10e1ae8406221df07f9c6">题目描述</h2>
+
+<p>How far can you make a stack of cards overhang a table? If you have one card, you can create a maximum overhang of half a card length. (We&rsquo;re assuming that the cards must be perpendicular to the table.) With two cards you can make the top card overhang the bottom one by half a card length, and the bottom one overhang the table by a third of a card length, for a total maximum overhang of <sup>1</sup>&frasl;<sub>2</sub> + <sup>1</sup>&frasl;<sub>3</sub> = <sup>5</sup>&frasl;<sub>6</sub> card lengths. In general you can make n cards overhang by <sup>1</sup>&frasl;<sub>2</sub> + <sup>1</sup>&frasl;<sub>3</sub> + <sup>1</sup>&frasl;<sub>4</sub> + &hellip; + 1/(n + 1) card lengths, where the top card overhangs the second by <sup>1</sup>&frasl;<sub>2</sub>, the second overhangs tha third by <sup>1</sup>&frasl;<sub>3</sub>, the third overhangs the fourth by <sup>1</sup>&frasl;<sub>4</sub>, etc., and the bottom card overhangs the table by 1/(n + 1). This is illustrated in the figure below.</p>
+
+<h2 id="输入:2e98549788b10e1ae8406221df07f9c6">输入</h2>
+
+<p>The input consists of one or more test cases, followed by a line containing the number 0.00 that signals the end of the input. Each test case is a single line containing a positive floating-point number c whose value is at least 0.01 and at most 5.20; c will contain exactly three digits.</p>
+
+<h2 id="输出:2e98549788b10e1ae8406221df07f9c6">输出</h2>
+
+<p>For each test case, output the minimum number of cards necessary to achieve an overhang of at least c card lengths. Use the exact output format shown in the examples.</p>
+
+<h2 id="输入示例:2e98549788b10e1ae8406221df07f9c6">输入示例</h2>
+
+<blockquote>
+<p>1.00</p>
+
+<p>3.71</p>
+
+<p>0.04</p>
+
+<p>5.19</p>
+
+<p>0.00</p>
+</blockquote>
+
+<h2 id="输出示例:2e98549788b10e1ae8406221df07f9c6">输出示例</h2>
+
+<blockquote>
+<p>3 card(s)</p>
+
+<p>61 card(s)</p>
+
+<p>1 card(s)</p>
+
+<p>273 card(s)</p>
+</blockquote>
+
+<h1 id="解题报告:2e98549788b10e1ae8406221df07f9c6">解题报告</h1>
+
+<h2 id="分析:2e98549788b10e1ae8406221df07f9c6">分析</h2>
+
+<p>本题较简单，可以采用map+vector的方式提高效率，vector用于保存原始的数据顺序，map可以根据数据大小自动排序。</p>
+
+<p>在计算的时候可以将每一步的计算结果与map的迭代器里的数比较，如果符合，则将取出map中的下一个数，这样能仅进行一遍计算就能得到全部结果。</p>
+
+<p>最后输出的时候键的顺序采用vector里保存的顺序（即原始顺序），值则采用map中的值。</p>
+
+<h2 id="源码:2e98549788b10e1ae8406221df07f9c6">源码</h2>
+
+<pre><code class="language-cpp">#include&lt;map&gt;
+#include&lt;vector&gt;
+#include&lt;string&gt;
+#include&lt;iostream&gt;
+using namespace std;
+int main() {
+    string item;
+    vector&lt;double&gt; input;
+    map&lt;double, int&gt; sorted;
+    double num;
+    while (true) {
+        cin &gt;&gt; item;
+        if (item == &quot;0.00&quot;) {
+            break;
+        }
+        num = item[0] - '0' + (item[2] - '0') * 0.1 + (item[3] - '0') * 0.01;
+        input.push_back(num);
+        sorted.insert(make_pair(num, 0));
+    }
+    double result = 0;
+    map&lt;double, int&gt;::iterator it = sorted.begin();
+    for (int i = 2; it != sorted.end(); ++i) {
+        result += 1.0 / i;
+        while (result &gt; it-&gt;first) {
+            it-&gt;second = i - 1;
+            ++it;
+            if (it == sorted.end()) {
+                break;
+            }
+        }
+    }
+    for (vector&lt;double&gt;::iterator itv = input.begin(); itv != input.end(); ++itv) {
+        cout &lt;&lt; sorted[*itv] &lt;&lt; &quot; card(s)&quot; &lt;&lt; endl;
+    }
+}
+</code></pre>
+</div>
+	
+	<hr style="clear:both;">
+	
+
+		<div class="tags">
+      <span>2015年9月14日</span>
+       
+    </div>
+	
+  </div>
+
+</div>
+</paper-item>
+<paper-item>
+  
+    <paper-fab disabled icon="chevron-left"></paper-fab>
+  
+    <div class="flex"></div>
+  
+    <a href="http://123hurray.github.io/2015/09/14/poj1002/"><paper-fab icon="chevron-right"></paper-fab></a>
+  
+</paper-item>
+
+
+      <paper-item>
+        <div class="copyright">© 2015 Copyright RayXXZhang</div>
+        <div class="flex"></div>
+        <div class="design">Design <a href="http://pdevty.github.io/blog/">pdevty</a></div>
+      </paper-item>
+    </paper-scroll-header-panel>
+  </paper-drawer-panel>
+  <script src="http://123hurray.github.iojs/highlight.pack.js"></script>
+  <script>
+  hljs.configure({
+  tabReplace: '    ', 
+})
+  hljs.initHighlightingOnLoad();
+  </script>
+  
+</body>
+</html>
+
