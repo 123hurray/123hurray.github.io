@@ -7,8 +7,115 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Mon, 14 Sep 2015 18:57:07 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 15 Sep 2015 20:33:06 +0800</lastBuildDate>
     <atom:link href="http://blog.123hurray.tk/categories/%E6%95%99%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Windows下PyInstaller的使用教程</title>
+      <link>http://blog.123hurray.tk/2015/09/15/pyinstaller/</link>
+      <pubDate>Tue, 15 Sep 2015 20:33:06 +0800</pubDate>
+      
+      <guid>http://blog.123hurray.tk/2015/09/15/pyinstaller/</guid>
+      <description>
+
+&lt;p&gt;直接使用Python开发的软件时有许多不方便的地方，如需要安装特定的Python环境，需要安装依赖库。为了便于部署，需要将Python源代码编译成可执行文件，编译后的可执行文件就能脱离python环境运行了。&lt;/p&gt;
+
+&lt;h1 id=&#34;安装:1b70070a7208f70b6a3e9d9aa27f8fdb&#34;&gt;安装&lt;/h1&gt;
+
+&lt;p&gt;将py编译成可执行文件需要使用&lt;a href=&#34;https://github.com/pyinstaller/&#34;&gt;PyInstaller&lt;/a&gt;，需要注意，从百度搜索到的下载链接来自SourceForge，而PyInstaller的开发似乎已经转到Github上去了，因此从SourceForge上下载的版本不是最新的。&lt;/p&gt;
+
+&lt;p&gt;目前最新的PyInstaller版本是2.1，最方便的安装方式是通过&lt;code&gt;pip&lt;/code&gt;使用如下命令安装：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pip install pyinstall
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;当然，也可以通过&lt;a href=&#34;https://github.com/pyinstaller/pyinstaller/releases&#34;&gt;下载&lt;/a&gt;源代码编译方式安装：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;python setup.py install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;安装完成后，使用如下命令可以确认版本号：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pyinstaller --version
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果显示&lt;code&gt;Error: Python 2.6+ on Windows support need pywin32&lt;/code&gt;，则说明当前没有安装&lt;a href=&#34;http://sourceforge.net/projects/pywin32/files/pywin32/&#34;&gt;pywin32&lt;/a&gt;，安装后即可正常运行PyInstaller。
+安装pywin32时需要注意，pywin32的版本和本机Python位数和版本必须相同。&lt;/p&gt;
+
+&lt;h1 id=&#34;简单使用:1b70070a7208f70b6a3e9d9aa27f8fdb&#34;&gt;简单使用&lt;/h1&gt;
+
+&lt;p&gt;最简单的使用方式是运行&lt;code&gt;pyinstaller myscript.py&lt;/code&gt;来生成可执行文件，其中&lt;code&gt;myscript.py&lt;/code&gt;是需要编译成可执行文件的源代码。
+通过这种方式生成的可执行文件默认位于当前文件夹的dist目录下的myscript目录中，该目录下除了有exe文件外，还有若干个其他文件，这些文件都是运行时必须的。
+编译完成后可以删除build文件夹，该文件夹存放的是编译过程中的生成的临时文件&lt;/p&gt;
+
+&lt;p&gt;如果希望编译出的exe文件不依赖其他文件，可以添加&lt;code&gt;-F&lt;/code&gt;选项：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;pyinstaller -F myscript.py&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;编译出的单独的exe文件在启动时速度上略慢于编译成文件夹方式。因为在执行单独的exe时会将资源先释放到临时文件夹中再执行。&lt;/p&gt;
+
+&lt;h1 id=&#34;常用选项:1b70070a7208f70b6a3e9d9aa27f8fdb&#34;&gt;常用选项&lt;/h1&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&amp;ndash;distpath=path_to_executable, -o path_to_executable&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;指定生成的可执行文件存放的目录，默认存放在dist目录下&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&amp;ndash;workpath=path_to_work_files&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;指定编译中临时文件存放的目录，默认存放在build目录下&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&amp;ndash;clean&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;清理编译时的临时文件&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;-F, &amp;ndash;onefile&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;生成单独的exe文件而不是文件夹&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;-d, &amp;ndash;debug&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;编译为debug模式，有助于运行中获取日志信息&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&amp;ndash;version-file=version_text_file&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;为exe文件添加版本信息，版本信息可以通过运行&lt;code&gt;pyi-grab_version&lt;/code&gt;加上要获取版本信息的exe文件的路径来生成，生成后的版本信息文件可以按需求修改并作为&lt;code&gt;--version-file&lt;/code&gt;的参数添加到要生成的exe文件中去&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;i &lt;FILE.ico&gt;, -i &lt;FILE.exe,ID&gt;, &amp;ndash;icon=&lt;FILE.ico&gt;, &amp;ndash;icon=&lt;FILE.exe,ID&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;为exe文件添加图标，可以指定图标路径或者从已存在的exe文件中抽取特定的ID的图标作为要生成的exe文件的图标&lt;/p&gt;
+
+&lt;p&gt;另外，还可以通过spec文件来生成可执行文件，运行&lt;code&gt;pyi-makespec options script [script ...]&lt;/code&gt;可以生成spec文件，修改spec文件后执行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pyinstaller specfile
+
+或者
+
+pyi-build specfile
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;就可以生成可执行文件了。&lt;/p&gt;
+
+&lt;p&gt;spec文件方式生成可执行文件提供了更多的定制选项，包括自定义python库的位置，要打包的其他文件路径等等。&lt;/p&gt;
+
+&lt;h2 id=&#34;更多:1b70070a7208f70b6a3e9d9aa27f8fdb&#34;&gt;更多&lt;/h2&gt;
+
+&lt;p&gt;更多的使用选项及错误解决方法可以参照PyInstaller的&lt;a href=&#34;http://pythonhosted.org/PyInstaller/&#34;&gt;官方帮助文档&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>使用Hugo搭建博客</title>

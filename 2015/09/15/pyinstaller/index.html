@@ -1,12 +1,11 @@
 
-
 <!doctype html>
 <html lang="zh-cn">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-  <title>Tags</title>
+  <title>Windows下PyInstaller的使用教程</title>
   <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
   <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
@@ -242,55 +241,152 @@
       </paper-toolbar>
 
 
-<link rel="import" href="http://blog.123hurray.tk/bower_components/paper-header-panel/paper-header-panel.html">
-<style is="custom-style">
+<paper-item>
+<div class="content">
 
-      paper-header-panel {
-        width: 100%;
-        @apply(--shadow-elevation-2dp);
-      }
-      .paper-header {
-        height: 60px;
-        font-size: 16px;
-        line-height: 60px;
-        padding: 0 10px;
-        color: white;
-        transition: height 0.2s;
-      }
-	  .green .paper-header {
-        background-color: var(--paper-green-500);
-      }
-.paper-header.tall {
-	font-size: 30px
-}
-.cover {
-	margin: 60px;
-}
-</style>
-<paper-header-panel mode="cover" class="green">
-<div class="paper-header tall">
+  <div class="article">
+    <div class="title"><div class="main single">Windows下PyInstaller的使用教程
+    
+      
 
-标签
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://blog.123hurray.tk/categories/python/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Python</paper-button></a>
+	
+	  <a href="http://blog.123hurray.tk/categories/%E6%95%99%E7%A8%8B/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>教程</paper-button></a>
+	
+</div>
+ 
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body">
+
+<p>直接使用Python开发的软件时有许多不方便的地方，如需要安装特定的Python环境，需要安装依赖库。为了便于部署，需要将Python源代码编译成可执行文件，编译后的可执行文件就能脱离python环境运行了。</p>
+
+<h1 id="安装:1b70070a7208f70b6a3e9d9aa27f8fdb">安装</h1>
+
+<p>将py编译成可执行文件需要使用<a href="https://github.com/pyinstaller/">PyInstaller</a>，需要注意，从百度搜索到的下载链接来自SourceForge，而PyInstaller的开发似乎已经转到Github上去了，因此从SourceForge上下载的版本不是最新的。</p>
+
+<p>目前最新的PyInstaller版本是2.1，最方便的安装方式是通过<code>pip</code>使用如下命令安装：</p>
+
+<pre><code class="language-shell">pip install pyinstall
+</code></pre>
+
+<p>当然，也可以通过<a href="https://github.com/pyinstaller/pyinstaller/releases">下载</a>源代码编译方式安装：</p>
+
+<pre><code class="language-shell">python setup.py install
+</code></pre>
+
+<p>安装完成后，使用如下命令可以确认版本号：</p>
+
+<pre><code class="language-shell">pyinstaller --version
+</code></pre>
+
+<p>如果显示<code>Error: Python 2.6+ on Windows support need pywin32</code>，则说明当前没有安装<a href="http://sourceforge.net/projects/pywin32/files/pywin32/">pywin32</a>，安装后即可正常运行PyInstaller。
+安装pywin32时需要注意，pywin32的版本和本机Python位数和版本必须相同。</p>
+
+<h1 id="简单使用:1b70070a7208f70b6a3e9d9aa27f8fdb">简单使用</h1>
+
+<p>最简单的使用方式是运行<code>pyinstaller myscript.py</code>来生成可执行文件，其中<code>myscript.py</code>是需要编译成可执行文件的源代码。
+通过这种方式生成的可执行文件默认位于当前文件夹的dist目录下的myscript目录中，该目录下除了有exe文件外，还有若干个其他文件，这些文件都是运行时必须的。
+编译完成后可以删除build文件夹，该文件夹存放的是编译过程中的生成的临时文件</p>
+
+<p>如果希望编译出的exe文件不依赖其他文件，可以添加<code>-F</code>选项：</p>
+
+<p><code>pyinstaller -F myscript.py</code></p>
+
+<p>编译出的单独的exe文件在启动时速度上略慢于编译成文件夹方式。因为在执行单独的exe时会将资源先释放到临时文件夹中再执行。</p>
+
+<h1 id="常用选项:1b70070a7208f70b6a3e9d9aa27f8fdb">常用选项</h1>
+
+<blockquote>
+<p>&ndash;distpath=path_to_executable, -o path_to_executable</p>
+</blockquote>
+
+<p>指定生成的可执行文件存放的目录，默认存放在dist目录下</p>
+
+<blockquote>
+<p>&ndash;workpath=path_to_work_files</p>
+</blockquote>
+
+<p>指定编译中临时文件存放的目录，默认存放在build目录下</p>
+
+<blockquote>
+<p>&ndash;clean</p>
+</blockquote>
+
+<p>清理编译时的临时文件</p>
+
+<blockquote>
+<p>-F, &ndash;onefile</p>
+</blockquote>
+
+<p>生成单独的exe文件而不是文件夹</p>
+
+<blockquote>
+<p>-d, &ndash;debug</p>
+</blockquote>
+
+<p>编译为debug模式，有助于运行中获取日志信息</p>
+
+<blockquote>
+<p>&ndash;version-file=version_text_file</p>
+</blockquote>
+
+<p>为exe文件添加版本信息，版本信息可以通过运行<code>pyi-grab_version</code>加上要获取版本信息的exe文件的路径来生成，生成后的版本信息文件可以按需求修改并作为<code>--version-file</code>的参数添加到要生成的exe文件中去</p>
+
+<blockquote>
+<p>i <FILE.ico>, -i <FILE.exe,ID>, &ndash;icon=<FILE.ico>, &ndash;icon=<FILE.exe,ID></p>
+</blockquote>
+
+<p>为exe文件添加图标，可以指定图标路径或者从已存在的exe文件中抽取特定的ID的图标作为要生成的exe文件的图标</p>
+
+<p>另外，还可以通过spec文件来生成可执行文件，运行<code>pyi-makespec options script [script ...]</code>可以生成spec文件，修改spec文件后执行：</p>
+
+<pre><code class="language-shell">pyinstaller specfile
+
+或者
+
+pyi-build specfile
+</code></pre>
+
+<p>就可以生成可执行文件了。</p>
+
+<p>spec文件方式生成可执行文件提供了更多的定制选项，包括自定义python库的位置，要打包的其他文件路径等等。</p>
+
+<h2 id="更多:1b70070a7208f70b6a3e9d9aa27f8fdb">更多</h2>
+
+<p>更多的使用选项及错误解决方法可以参照PyInstaller的<a href="http://pythonhosted.org/PyInstaller/">官方帮助文档</a></p>
+</div>
+	
+	<hr style="clear:both;">
+	
+
+		<div class="tags">
+      <span>2015年9月15日</span>
+      
+        
+          <a href="http://blog.123hurray.tk/tags/pyinstaller/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>PyInstaller</paper-button></a>
+        
+       
+    </div>
+	
+  </div>
 
 </div>
-<div class="content cover" style="min-height:300px">
+</paper-item>
+<paper-item>
+  
+    <paper-fab disabled icon="chevron-left"></paper-fab>
+  
+    <div class="flex"></div>
+  
+    <a href="http://blog.123hurray.tk/2015/09/14/poj1003/"><paper-fab icon="chevron-right"></paper-fab></a>
+  
+</paper-item>
 
-<paper-menu>
-  
-    <a href="http://blog.123hurray.tk/tags/hugo"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">hugo</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/map"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">map</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/markdown"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">markdown</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/polymer"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">polymer</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/pyinstaller"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">pyinstaller</div> 1</paper-item></a>
-  
-</paper-menu>
-
-</div>
-</paper-header-panel>
 
       <paper-item>
         <div class="copyright">© 2015 Copyright RayXXZhang</div>
@@ -309,3 +405,4 @@
   
 </body>
 </html>
+
