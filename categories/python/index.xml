@@ -93,7 +93,7 @@
 &lt;p&gt;为exe文件添加版本信息，版本信息可以通过运行&lt;code&gt;pyi-grab_version&lt;/code&gt;加上要获取版本信息的exe文件的路径来生成，生成后的版本信息文件可以按需求修改并作为&lt;code&gt;--version-file&lt;/code&gt;的参数添加到要生成的exe文件中去&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;i &lt;FILE.ico&gt;, -i &lt;FILE.exe,ID&gt;, &amp;ndash;icon=&lt;FILE.ico&gt;, &amp;ndash;icon=&lt;FILE.exe,ID&gt;&lt;/p&gt;
+&lt;p&gt;i &amp;lt;FILE.ico&amp;gt;, -i &amp;lt;FILE.exe,ID&amp;gt;, &amp;ndash;icon=&amp;lt;FILE.ico&amp;gt;, &amp;ndash;icon=&amp;lt;FILE.exe,ID&amp;gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;p&gt;为exe文件添加图标，可以指定图标路径或者从已存在的exe文件中抽取特定的ID的图标作为要生成的exe文件的图标&lt;/p&gt;

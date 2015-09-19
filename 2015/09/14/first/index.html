@@ -151,7 +151,7 @@
       padding: 16px;
       margin: 16px;
       border-radius: 5px;
-      background-color: #fff;
+      background-color: #fafafa;
     }
 	.toolbar-tools.paper-toolbar .title.bottom {
 		font-size: 40px;
@@ -302,7 +302,8 @@
 <p>以上工作完成后，基本的准备工作就算结束了。随着这篇博文的发布，博客就算正式建立了。近期的博客发布计划主要是在Android开发中的一些心得及备忘，<a href="https://poj.org/">POJ</a>题目的解题心得等等。</p>
 </div>
 	
-	<hr style="clear:both;">
+	<hr style="clear:both; margin:30px -16px; height:1px;border:none; background-color:#eee">
+
 	
 
 		<div class="tags">
@@ -318,8 +319,111 @@
        
     </div>
 	
+	<hr style="clear:both; margin:20px -16px; height:1px;border:none;border-top:1px dashed #03a9f4;">
+	
+  
+  <style>
+  #ds-reset .ds-avatar img {
+	border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-comments {
+    border-bottom:none;
+  }
+  #ds-thread #ds-reset .ds-comment-body {
+	padding-left:85px;
+	padding-top: 4px;
+  }
+  #ds-thread #ds-reset .ds-meta {
+	float:left;
+	border:none;
+	margin-right:350px;
+  }
+  #ds-thread #ds-reset .ds-toolbar {
+	display:none;
+  }
+  #ds-thread #ds-reset .ds-sort a, #ds-thread #ds-reset li.ds-tab a.ds-current
+  ,#ds-thread #ds-reset a.ds-like-thread-button {
+		border:0;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+		transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+		display: inline-block;
+		position: relative;
+		box-sizing: border-box;
+		min-width: 5.14em;
+		margin: 0 0.29em;
+		background: transparent;
+		text-align: center;
+		font: inherit;
+		text-transform: uppercase;
+		outline-width: 0;
+		border-radius: 3px;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		-webkit-user-select: none;
+		user-select: none;
+		cursor: pointer;
+		z-index: 0;
+  }
+  #ds-thread #ds-reset .ds-sort{
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  #ds-thread #ds-reset .ds-sort a{
+    margin:0;
+	padding:3px 5px;
+	margin-left:-1px;
+	box-shadow:none;
+  }
+  #ds-thread #ds-reset .ds-sort a:first-child:not(:last-child){
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child):not(:last-child){
+    border-radius: 0;
+	border-left: 1px solid #eee;
+	border-right: 1px solid #eee;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child){
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+  #ds-thread #ds-reset li.ds-post
+  ,#ds-thread #ds-reset .ds-replybox  {
+	margin-top:16px;
+	border-top:0;
+	padding:15px 20px;
+	display: inline-block;
+	box-sizing: border-box;
+    background: #fff;
+    border-radius: 2px;
+	margin-bottom: 16px;
+	box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  }
+  #ds-thread #ds-reset .ds-replybox {
+    width:100%;
+	z-index:0;
+  }
+  #ds-thread #ds-reset .ds-replybox form {
+	margin-left: 80px;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar {
+    position:relative;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar img {
+    border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-textarea-wrapper,#ds-reset .ds-gradient-bg,#ds-thread #ds-reset .ds-post-button {
+    background: transparent;
+  }
+  
+  </style>
+	<div class="ds-thread" data-thread-key="/2015/09/14/first/" data-title="使用Hugo搭建博客" data-url="http://blog.123hurray.tk/2015/09/14/first/"></div>
+  
   </div>
-
 </div>
 </paper-item>
 <paper-item>
@@ -341,6 +445,18 @@
     </paper-scroll-header-panel>
   </paper-drawer-panel>
   <script src="http://blog.123hurray.tk/js/highlight.pack.js"></script>
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"123hurray"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+        || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+</script>
+
   <script>
   hljs.configure({
   tabReplace: '    ', 
@@ -351,3 +467,16 @@
 </body>
 </html>
 
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"blog123hurray"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
