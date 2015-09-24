@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-  <title>POJ1003解题报告</title>
+  <title>POJ1059解题报告</title>
   <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
   <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
@@ -245,7 +245,7 @@
 <div class="content">
 
   <div class="article">
-    <div class="title"><div class="main single">POJ1003解题报告
+    <div class="title"><div class="main single">POJ1059解题报告
     
       
 
@@ -263,104 +263,206 @@
 	<hr style="clear:both;">
     <div class="markdown-body">
 
-<h1 id="题目概览:2e98549788b10e1ae8406221df07f9c6">题目概览</h1>
+<h1 id="题目概览:47fa44fa87bdadb13bbc958230fb603b">题目概览</h1>
 
-<h2 id="标题:2e98549788b10e1ae8406221df07f9c6">标题</h2>
+<h2 id="标题:47fa44fa87bdadb13bbc958230fb603b">标题</h2>
 
-<p>Handover</p>
+<p>Chutes and Ladders</p>
 
-<h2 id="要求:2e98549788b10e1ae8406221df07f9c6">要求</h2>
+<h2 id="要求:47fa44fa87bdadb13bbc958230fb603b">要求</h2>
 
 <ul>
-<li><p>Time Limit: 1000MS</p></li>
-
-<li><p>Memory Limit: 10000K</p></li>
+<li>Time Limit: 1000MS</li>
+<li>Memory Limit: 10000K</li>
 </ul>
 
-<h2 id="题目描述:2e98549788b10e1ae8406221df07f9c6">题目描述</h2>
+<h2 id="题目描述:47fa44fa87bdadb13bbc958230fb603b">题目描述</h2>
 
-<p>How far can you make a stack of cards overhang a table? If you have one card, you can create a maximum overhang of half a card length. (We&rsquo;re assuming that the cards must be perpendicular to the table.) With two cards you can make the top card overhang the bottom one by half a card length, and the bottom one overhang the table by a third of a card length, for a total maximum overhang of <sup>1</sup>&frasl;<sub>2</sub> + <sup>1</sup>&frasl;<sub>3</sub> = <sup>5</sup>&frasl;<sub>6</sub> card lengths. In general you can make n cards overhang by <sup>1</sup>&frasl;<sub>2</sub> + <sup>1</sup>&frasl;<sub>3</sub> + <sup>1</sup>&frasl;<sub>4</sub> + &hellip; + 1/(n + 1) card lengths, where the top card overhangs the second by <sup>1</sup>&frasl;<sub>2</sub>, the second overhangs tha third by <sup>1</sup>&frasl;<sub>3</sub>, the third overhangs the fourth by <sup>1</sup>&frasl;<sub>4</sub>, etc., and the bottom card overhangs the table by 1/(n + 1). This is illustrated in the figure below.</p>
+<p>A popular board game for children is called &ldquo;Chutes and Ladders&rdquo;. The board has squares which are numbered from 1 to 100, and players have counters which start on the theoretical square 0. The players take turns at throwing a die with the numbers 1 to 6 on it, and each moves his or her counter forward the number of squares corresponding to the number on the die (the square they reach is found by adding the die number to the square number their counter is on). The first person to reach square 100 is the winner.</p>
 
-<h2 id="输入:2e98549788b10e1ae8406221df07f9c6">输入</h2>
+<p>The interest is caused by the fact that pairs of squares are connected together by &ldquo;ladders&rdquo; (which connect a lower-numbered square to a higher-numbered square) and &ldquo;chutes&rdquo; (which run from high to low). If a counter lands on the start of a chute or ladder (i.e., this is the square reached after throwing the die), then the counter is moved to the corresponding square at the end of the chute or ladder. Note that landing on the end square of a ladder or a chute has no effect, only the start square counts. Furthermore, there are some squares such that if a player&rsquo;s counter lands on them, then the player must either miss the next turn, or immediately throw the die again for another turn, depending on what is written on the board. A miss-a-turn or extra-turn square is never the start or end of a ladder or chute. If a player is on square 95 or higher, then a die throw which takes them past 100 must be ignored - thus a player on square 99 must ignore all throws which are not 1.</p>
 
-<p>The input consists of one or more test cases, followed by a line containing the number 0.00 that signals the end of the input. Each test case is a single line containing a positive floating-point number c whose value is at least 0.01 and at most 5.20; c will contain exactly three digits.</p>
+<h2 id="输入:47fa44fa87bdadb13bbc958230fb603b">输入</h2>
 
-<h2 id="输出:2e98549788b10e1ae8406221df07f9c6">输出</h2>
+<p>Input will start with a set of less than 1000 die throws which you must use for all games, starting each new game with the first player &ldquo;throwing&rdquo; the first number in the set, the next player &ldquo;throwing&rdquo; the second number, and so on. This set of die throws will simply be a list of random numbers between 1 and 6, separated by single spaces, with not more than 80 characters on each line. It will be terminated by the number 0. After this set of die throws, there will be one or more game sets. Each game set is in three parts. The first part is a line containing a single number giving the number of players in the game. This will be more than 1 and less than 6. Then the board is described, in two parts. The first part lists the ladders and the chutes on the board, each ladder or chute being defined on a single line. Each is given by two numbers, from 1 to 99,separated by one or more spaces. The first number gives the start square, and the second number gives the end square; so it is a ladder if the first number is less than the second number, and a chute if the order is the other way. The chute/ladder definitions are terminated by a line containing two 0&rsquo;s. The second part of the board description gives the lose-a-turn/extra-turn squares, if there are any. These are single numbers, one per line, defining the squares. If the number is negative, its positive counterpart is a lose-a-turn square; if positive, it represents an extra-turn square. (For example, -16 means that square 16 on the board is a lose-a-turn square, while a 25 means that players landing on square 25 must immediately roll again.) The end of this set of descriptions, and of the game description, is given by a single 0. The end of all the game descriptions is given by a game with the number of players equal to 0.</p>
 
-<p>For each test case, output the minimum number of cards necessary to achieve an overhang of at least c card lengths. Use the exact output format shown in the examples.</p>
+<h2 id="输出:47fa44fa87bdadb13bbc958230fb603b">输出</h2>
 
-<h2 id="输入示例:2e98549788b10e1ae8406221df07f9c6">输入示例</h2>
+<p>Output must be one line for each game in the input, giving the number of the player who wins the game. Every game will determine a winner in fewer throws than those given at the start of the data.</p>
 
-<blockquote>
-<p>1.00</p>
-
-<p>3.71</p>
-
-<p>0.04</p>
-
-<p>5.19</p>
-
-<p>0.00</p>
-</blockquote>
-
-<h2 id="输出示例:2e98549788b10e1ae8406221df07f9c6">输出示例</h2>
+<h2 id="示例输入:47fa44fa87bdadb13bbc958230fb603b">示例输入</h2>
 
 <blockquote>
-<p>3 card(s)</p>
+<p>2</p>
 
-<p>61 card(s)</p>
+<p>6 95</p>
 
-<p>1 card(s)</p>
+<p>99 1</p>
 
-<p>273 card(s)</p>
+<p>0 0</p>
+
+<p>-3</p>
+
+<p>98</p>
+
+<p>0</p>
+
+<p>2</p>
+
+<p>3 99</p>
+
+<p>6 90</p>
+
+<p>0 0</p>
+
+<p>0</p>
+
+<p>0</p>
 </blockquote>
 
-<h1 id="解题报告:2e98549788b10e1ae8406221df07f9c6">解题报告</h1>
+<h2 id="示例输出:47fa44fa87bdadb13bbc958230fb603b">示例输出</h2>
 
-<h2 id="分析:2e98549788b10e1ae8406221df07f9c6">分析</h2>
+<blockquote>
+<p>2</p>
+</blockquote>
 
-<p>本题较简单，可以采用map+vector的方式提高效率，vector用于保存原始的数据顺序，map可以根据数据大小自动排序。</p>
+<h1 id="分析:47fa44fa87bdadb13bbc958230fb603b">分析</h1>
 
-<p>在计算的时候可以将每一步的计算结果与map的迭代器里的数比较，如果符合，则将取出map中的下一个数，这样能仅进行一遍计算就能得到全部结果。</p>
+<p>本题属于模拟题，虽然通过率不高，但实际上并不难，只要理解了题意模拟游戏场景就能顺利做出来。</p>
 
-<p>最后输出的时候键的顺序采用vector里保存的顺序（即原始顺序），值则采用map中的值。</p>
+<p>题意说的是若干个玩家玩一个叫飞行棋的游戏，棋盘有101格，分别标0-100，游戏开始时所有玩家都在0格，游戏中玩家轮流掷骰子（1-6点），</p>
 
-<h2 id="源码:2e98549788b10e1ae8406221df07f9c6">源码</h2>
+<p>若当前格子编号加上骰子掷出的点数小于等于100，则前进骰子掷出的点数个格子，否则不动。前进后有几种情况，若格子是一个“梯子格”，就会从该格前进到指定的更大点数的格子，若格子是一个“滑梯格”，</p>
 
-<pre><code class="language-cpp">#include&lt;map&gt;
+<p>就会从该格后退到指定的点数小的格子。每个格子还有一个属性，多掷一次骰子或者停一轮，如果最后落到有这两个属性之一的格子里，</p>
+
+<p>则多掷一次骰子，或者下一轮轮空一次。先到达100点的为胜者。</p>
+
+<p>解题用到了<code>vector</code>，<code>set</code>和<code>map</code>结构，<code>vector</code>用于保存输入的点数列表，<code>map</code>结构用于存放“梯子/滑梯对”以及“多掷一次/轮空一次”。</p>
+
+<p>最后的<code>set</code>用于存放模拟时轮空一次的玩家编号。</p>
+
+<p>要注意玩家编号若从0开始，最后输出的时候需要加1。</p>
+
+<h1 id="源码:47fa44fa87bdadb13bbc958230fb603b">源码</h1>
+
+<pre><code class="language-cpp">#include&lt;iostream&gt;
 #include&lt;vector&gt;
-#include&lt;string&gt;
-#include&lt;iostream&gt;
+#include&lt;map&gt;
+#include&lt;set&gt;
+
 using namespace std;
 int main() {
-    string item;
-    vector&lt;double&gt; input;
-    map&lt;double, int&gt; sorted;
-    double num;
-    while (true) {
-        cin &gt;&gt; item;
-        if (item == &quot;0.00&quot;) {
-            break;
-        }
-        num = item[0] - '0' + (item[2] - '0') * 0.1 + (item[3] - '0') * 0.01;
-        input.push_back(num);
-        sorted.insert(make_pair(num, 0));
-    }
-    double result = 0;
-    map&lt;double, int&gt;::iterator it = sorted.begin();
-    for (int i = 2; it != sorted.end(); ++i) {
-        result += 1.0 / i;
-        while (result &gt; it-&gt;first) {
-            it-&gt;second = i - 1;
-            ++it;
-            if (it == sorted.end()) {
-                break;
-            }
-        }
-    }
-    for (vector&lt;double&gt;::iterator itv = input.begin(); itv != input.end(); ++itv) {
-        cout &lt;&lt; sorted[*itv] &lt;&lt; &quot; card(s)&quot; &lt;&lt; endl;
-    }
+	// 点数列表
+	vector&lt;int&gt; dies;
+	while(true) {
+		int count;
+		cin &gt;&gt; count;
+		if (count != 0) {
+			dies.push_back(count);
+		}
+		else {
+			break;
+		}
+	}
+	while (true) {
+		int playerNum;
+		// 初始化玩家数
+		cin &gt;&gt; playerNum;
+		if (playerNum == 0) {
+			break;
+		}
+		// 初始化 chutes&amp;ladders 表
+		map&lt;int, int&gt; chutes_or_ladders_map;
+		while (true) {
+			int start, end;
+			cin &gt;&gt; start &gt;&gt; end;
+			if (start == 0 &amp;&amp; end == 0) {
+				break;
+			}
+			chutes_or_ladders_map.insert(make_pair(start, end));
+		}
+		// “多掷一次/轮空一次”表
+		map&lt;int, bool&gt; lose_or_extra_map;
+		while (true) {
+			int in;
+			cin &gt;&gt; in;
+			if (in == 0) {
+				break;
+			}
+			else if(in &gt; 0){
+				// 多掷一次
+				lose_or_extra_map.insert(make_pair(in, true));
+			}
+			else {
+				// 轮空一次
+				lose_or_extra_map.insert(make_pair(-in, false));
+			}
+		}
+		// 初始化玩家
+		int *players = new int[playerNum]();
+		// 当前掷骰子的玩家编号
+		int currentPlayer = 0;
+		vector&lt;int&gt;::iterator it = dies.begin();
+		int num = 0;
+		set&lt;int&gt; passes;
+		while (true) {
+			// 开始模拟
+			if (passes.find(currentPlayer) != passes.end()) {
+				// 当前玩家在轮空表中，先从轮空列表中删除该玩家
+				passes.erase(currentPlayer);
+				// 对当前玩家编号自增
+				if (++currentPlayer == playerNum) {
+					// 注意循环玩家编号
+					currentPlayer = 0;
+				}
+				continue;
+			}
+			if (it == dies.end()) {
+				// 防止骰子点数用尽，做循环
+				it = dies.begin();
+			}
+			// 保存当前玩家的格子编号，提高效率
+			num = players[currentPlayer];
+			// 如果当前格子数不大于100，前进
+			int tmp = num + *it;
+			++it;
+			if (tmp &lt; 100) {
+				num = tmp;
+			}
+			else if (tmp == 100) {
+				// 到100格，结束游戏
+				cout &lt;&lt; currentPlayer + 1 &lt;&lt; endl;
+				break;
+			}
+			// 前进后查询是否在“梯子/滑梯”格中
+			if (chutes_or_ladders_map.find(num) != chutes_or_ladders_map.end()) {
+				// 前进或后退相应格数
+				num = chutes_or_ladders_map[num];
+			}
+			// 写回结果
+			players[currentPlayer] = num;
+			if (lose_or_extra_map.find(num) != lose_or_extra_map.end()) {
+				if (lose_or_extra_map[num] == true) {
+					// 多掷一次
+				}
+				else {
+					// 轮空一次
+					passes.insert(currentPlayer);
+					if (++currentPlayer == playerNum) {
+						currentPlayer = 0;
+					}
+				}
+			}
+			else {
+				if (++currentPlayer == playerNum) {
+					currentPlayer = 0;
+				}
+			}
+		}
+		// 释放玩家列表内存
+		delete[] players;
+	}
 }
 </code></pre>
 </div>
@@ -370,7 +472,7 @@ int main() {
 	
 
 		<div class="tags">
-      <span>2015年9月14日</span>
+      <span>2015年9月24日</span>
        
     </div>
 	
@@ -479,18 +581,18 @@ int main() {
   }
   
   </style>
-	<div class="ds-thread" data-thread-key="/2015/09/14/poj1003/" data-title="POJ1003解题报告" data-url="http://blog.123hurray.tk/2015/09/14/poj1003/"></div>
+	<div class="ds-thread" data-thread-key="/2015/09/24/poj1059/" data-title="POJ1059解题报告" data-url="http://blog.123hurray.tk/2015/09/24/poj1059/"></div>
   
   </div>
 </div>
 </paper-item>
 <paper-item>
   
-    <a href="http://blog.123hurray.tk/2015/09/15/pyinstaller/"><paper-fab icon="chevron-left"></paper-fab></a>
+    <paper-fab disabled icon="chevron-left"></paper-fab>
   
     <div class="flex"></div>
   
-    <a href="http://blog.123hurray.tk/2015/09/14/poj1002/"><paper-fab icon="chevron-right"></paper-fab></a>
+    <a href="http://blog.123hurray.tk/2015/09/15/pyinstaller/"><paper-fab icon="chevron-right"></paper-fab></a>
   
 </paper-item>
 

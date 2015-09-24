@@ -7,8 +7,221 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Mon, 14 Sep 2015 21:35:12 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 24 Sep 2015 22:55:21 +0800</lastBuildDate>
     <atom:link href="http://blog.123hurray.tk/categories/poj/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>POJ1059解题报告</title>
+      <link>http://blog.123hurray.tk/2015/09/24/poj1059/</link>
+      <pubDate>Thu, 24 Sep 2015 22:55:21 +0800</pubDate>
+      
+      <guid>http://blog.123hurray.tk/2015/09/24/poj1059/</guid>
+      <description>
+
+&lt;h1 id=&#34;题目概览:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;题目概览&lt;/h1&gt;
+
+&lt;h2 id=&#34;标题:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;标题&lt;/h2&gt;
+
+&lt;p&gt;Chutes and Ladders&lt;/p&gt;
+
+&lt;h2 id=&#34;要求:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;要求&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Time Limit: 1000MS&lt;/li&gt;
+&lt;li&gt;Memory Limit: 10000K&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;题目描述:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;题目描述&lt;/h2&gt;
+
+&lt;p&gt;A popular board game for children is called &amp;ldquo;Chutes and Ladders&amp;rdquo;. The board has squares which are numbered from 1 to 100, and players have counters which start on the theoretical square 0. The players take turns at throwing a die with the numbers 1 to 6 on it, and each moves his or her counter forward the number of squares corresponding to the number on the die (the square they reach is found by adding the die number to the square number their counter is on). The first person to reach square 100 is the winner.&lt;/p&gt;
+
+&lt;p&gt;The interest is caused by the fact that pairs of squares are connected together by &amp;ldquo;ladders&amp;rdquo; (which connect a lower-numbered square to a higher-numbered square) and &amp;ldquo;chutes&amp;rdquo; (which run from high to low). If a counter lands on the start of a chute or ladder (i.e., this is the square reached after throwing the die), then the counter is moved to the corresponding square at the end of the chute or ladder. Note that landing on the end square of a ladder or a chute has no effect, only the start square counts. Furthermore, there are some squares such that if a player&amp;rsquo;s counter lands on them, then the player must either miss the next turn, or immediately throw the die again for another turn, depending on what is written on the board. A miss-a-turn or extra-turn square is never the start or end of a ladder or chute. If a player is on square 95 or higher, then a die throw which takes them past 100 must be ignored - thus a player on square 99 must ignore all throws which are not 1.&lt;/p&gt;
+
+&lt;h2 id=&#34;输入:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;输入&lt;/h2&gt;
+
+&lt;p&gt;Input will start with a set of less than 1000 die throws which you must use for all games, starting each new game with the first player &amp;ldquo;throwing&amp;rdquo; the first number in the set, the next player &amp;ldquo;throwing&amp;rdquo; the second number, and so on. This set of die throws will simply be a list of random numbers between 1 and 6, separated by single spaces, with not more than 80 characters on each line. It will be terminated by the number 0. After this set of die throws, there will be one or more game sets. Each game set is in three parts. The first part is a line containing a single number giving the number of players in the game. This will be more than 1 and less than 6. Then the board is described, in two parts. The first part lists the ladders and the chutes on the board, each ladder or chute being defined on a single line. Each is given by two numbers, from 1 to 99,separated by one or more spaces. The first number gives the start square, and the second number gives the end square; so it is a ladder if the first number is less than the second number, and a chute if the order is the other way. The chute/ladder definitions are terminated by a line containing two 0&amp;rsquo;s. The second part of the board description gives the lose-a-turn/extra-turn squares, if there are any. These are single numbers, one per line, defining the squares. If the number is negative, its positive counterpart is a lose-a-turn square; if positive, it represents an extra-turn square. (For example, -16 means that square 16 on the board is a lose-a-turn square, while a 25 means that players landing on square 25 must immediately roll again.) The end of this set of descriptions, and of the game description, is given by a single 0. The end of all the game descriptions is given by a game with the number of players equal to 0.&lt;/p&gt;
+
+&lt;h2 id=&#34;输出:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;输出&lt;/h2&gt;
+
+&lt;p&gt;Output must be one line for each game in the input, giving the number of the player who wins the game. Every game will determine a winner in fewer throws than those given at the start of the data.&lt;/p&gt;
+
+&lt;h2 id=&#34;示例输入:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;示例输入&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;2&lt;/p&gt;
+
+&lt;p&gt;6 95&lt;/p&gt;
+
+&lt;p&gt;99 1&lt;/p&gt;
+
+&lt;p&gt;0 0&lt;/p&gt;
+
+&lt;p&gt;-3&lt;/p&gt;
+
+&lt;p&gt;98&lt;/p&gt;
+
+&lt;p&gt;0&lt;/p&gt;
+
+&lt;p&gt;2&lt;/p&gt;
+
+&lt;p&gt;3 99&lt;/p&gt;
+
+&lt;p&gt;6 90&lt;/p&gt;
+
+&lt;p&gt;0 0&lt;/p&gt;
+
+&lt;p&gt;0&lt;/p&gt;
+
+&lt;p&gt;0&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;示例输出:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;示例输出&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;2&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&#34;分析:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;分析&lt;/h1&gt;
+
+&lt;p&gt;本题属于模拟题，虽然通过率不高，但实际上并不难，只要理解了题意模拟游戏场景就能顺利做出来。&lt;/p&gt;
+
+&lt;p&gt;题意说的是若干个玩家玩一个叫飞行棋的游戏，棋盘有101格，分别标0-100，游戏开始时所有玩家都在0格，游戏中玩家轮流掷骰子（1-6点），&lt;/p&gt;
+
+&lt;p&gt;若当前格子编号加上骰子掷出的点数小于等于100，则前进骰子掷出的点数个格子，否则不动。前进后有几种情况，若格子是一个“梯子格”，就会从该格前进到指定的更大点数的格子，若格子是一个“滑梯格”，&lt;/p&gt;
+
+&lt;p&gt;就会从该格后退到指定的点数小的格子。每个格子还有一个属性，多掷一次骰子或者停一轮，如果最后落到有这两个属性之一的格子里，&lt;/p&gt;
+
+&lt;p&gt;则多掷一次骰子，或者下一轮轮空一次。先到达100点的为胜者。&lt;/p&gt;
+
+&lt;p&gt;解题用到了&lt;code&gt;vector&lt;/code&gt;，&lt;code&gt;set&lt;/code&gt;和&lt;code&gt;map&lt;/code&gt;结构，&lt;code&gt;vector&lt;/code&gt;用于保存输入的点数列表，&lt;code&gt;map&lt;/code&gt;结构用于存放“梯子/滑梯对”以及“多掷一次/轮空一次”。&lt;/p&gt;
+
+&lt;p&gt;最后的&lt;code&gt;set&lt;/code&gt;用于存放模拟时轮空一次的玩家编号。&lt;/p&gt;
+
+&lt;p&gt;要注意玩家编号若从0开始，最后输出的时候需要加1。&lt;/p&gt;
+
+&lt;h1 id=&#34;源码:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;源码&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;#include&amp;lt;iostream&amp;gt;
+#include&amp;lt;vector&amp;gt;
+#include&amp;lt;map&amp;gt;
+#include&amp;lt;set&amp;gt;
+
+using namespace std;
+int main() {
+	// 点数列表
+	vector&amp;lt;int&amp;gt; dies;
+	while(true) {
+		int count;
+		cin &amp;gt;&amp;gt; count;
+		if (count != 0) {
+			dies.push_back(count);
+		}
+		else {
+			break;
+		}
+	}
+	while (true) {
+		int playerNum;
+		// 初始化玩家数
+		cin &amp;gt;&amp;gt; playerNum;
+		if (playerNum == 0) {
+			break;
+		}
+		// 初始化 chutes&amp;amp;ladders 表
+		map&amp;lt;int, int&amp;gt; chutes_or_ladders_map;
+		while (true) {
+			int start, end;
+			cin &amp;gt;&amp;gt; start &amp;gt;&amp;gt; end;
+			if (start == 0 &amp;amp;&amp;amp; end == 0) {
+				break;
+			}
+			chutes_or_ladders_map.insert(make_pair(start, end));
+		}
+		// “多掷一次/轮空一次”表
+		map&amp;lt;int, bool&amp;gt; lose_or_extra_map;
+		while (true) {
+			int in;
+			cin &amp;gt;&amp;gt; in;
+			if (in == 0) {
+				break;
+			}
+			else if(in &amp;gt; 0){
+				// 多掷一次
+				lose_or_extra_map.insert(make_pair(in, true));
+			}
+			else {
+				// 轮空一次
+				lose_or_extra_map.insert(make_pair(-in, false));
+			}
+		}
+		// 初始化玩家
+		int *players = new int[playerNum]();
+		// 当前掷骰子的玩家编号
+		int currentPlayer = 0;
+		vector&amp;lt;int&amp;gt;::iterator it = dies.begin();
+		int num = 0;
+		set&amp;lt;int&amp;gt; passes;
+		while (true) {
+			// 开始模拟
+			if (passes.find(currentPlayer) != passes.end()) {
+				// 当前玩家在轮空表中，先从轮空列表中删除该玩家
+				passes.erase(currentPlayer);
+				// 对当前玩家编号自增
+				if (++currentPlayer == playerNum) {
+					// 注意循环玩家编号
+					currentPlayer = 0;
+				}
+				continue;
+			}
+			if (it == dies.end()) {
+				// 防止骰子点数用尽，做循环
+				it = dies.begin();
+			}
+			// 保存当前玩家的格子编号，提高效率
+			num = players[currentPlayer];
+			// 如果当前格子数不大于100，前进
+			int tmp = num + *it;
+			++it;
+			if (tmp &amp;lt; 100) {
+				num = tmp;
+			}
+			else if (tmp == 100) {
+				// 到100格，结束游戏
+				cout &amp;lt;&amp;lt; currentPlayer + 1 &amp;lt;&amp;lt; endl;
+				break;
+			}
+			// 前进后查询是否在“梯子/滑梯”格中
+			if (chutes_or_ladders_map.find(num) != chutes_or_ladders_map.end()) {
+				// 前进或后退相应格数
+				num = chutes_or_ladders_map[num];
+			}
+			// 写回结果
+			players[currentPlayer] = num;
+			if (lose_or_extra_map.find(num) != lose_or_extra_map.end()) {
+				if (lose_or_extra_map[num] == true) {
+					// 多掷一次
+				}
+				else {
+					// 轮空一次
+					passes.insert(currentPlayer);
+					if (++currentPlayer == playerNum) {
+						currentPlayer = 0;
+					}
+				}
+			}
+			else {
+				if (++currentPlayer == playerNum) {
+					currentPlayer = 0;
+				}
+			}
+		}
+		// 释放玩家列表内存
+		delete[] players;
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>POJ1003解题报告</title>
