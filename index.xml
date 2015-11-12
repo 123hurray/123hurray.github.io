@@ -7,8 +7,174 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Thu, 29 Oct 2015 15:32:52 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2015 22:50:13 +0800</lastBuildDate>
     <atom:link href="http://blog.123hurray.tk/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化</title>
+      <link>http://blog.123hurray.tk/2015/11/12/nsqd-source-1-init/</link>
+      <pubDate>Thu, 12 Nov 2015 22:50:13 +0800</pubDate>
+      
+      <guid>http://blog.123hurray.tk/2015/11/12/nsqd-source-1-init/</guid>
+      <description>
+
+&lt;h1 id=&#34;配置解析:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;配置解析&lt;/h1&gt;
+
+&lt;p&gt;nsqd的主函数位于&lt;code&gt;apps/nsqd.go&lt;/code&gt;中的&lt;code&gt;main&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;flagSet := nsqFlagset()
+flagSet.Parse(os.Args[1:])
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;首先&lt;code&gt;main&lt;/code&gt;函数调用&lt;code&gt;nsqFlagset&lt;/code&gt;和&lt;code&gt;Parse&lt;/code&gt;进行命令行参数集初始化，
+然后判断&lt;code&gt;version&lt;/code&gt;参数是否存在，若存在，则打印版本号并退出程序&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;signalChan := make(chan os.Signal, 1)
+signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+//...
+&amp;lt;-signalChan
+nsqd.Exit()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;接下来钩住系统的&lt;code&gt;syscall.SIGINT&lt;/code&gt;和&lt;code&gt;syscall.SIGTERM&lt;/code&gt;消息，用来阻塞主goroutine防止退出&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var cfg config
+configFile := flagSet.Lookup(&amp;quot;config&amp;quot;).Value.String()
+if configFile != &amp;quot;&amp;quot; {
+	_, err := toml.DecodeFile(configFile, &amp;amp;cfg)
+	if err != nil {
+		log.Fatalf(&amp;quot;ERROR: failed to load config file %s - %s&amp;quot;, configFile, err.Error())
+	}
+}
+cfg.Validate()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;随后判断&lt;code&gt;config&lt;/code&gt;参数是否存在，若存在的话还需进行配置文件的读取，
+nsq使用toml格式的配置文件，并通过&lt;code&gt;github.com/BurntSushi/toml&lt;/code&gt;库进行配置文件的读取和解析&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (cfg config) Validate() {
+	// special validation/translation
+	if v, exists := cfg[&amp;quot;tls_required&amp;quot;]; exists {
+		var t tlsRequiredOption
+		err := t.Set(fmt.Sprintf(&amp;quot;%v&amp;quot;, v))
+		if err == nil {
+			cfg[&amp;quot;tls_required&amp;quot;] = t.String()
+		} else {
+			log.Fatalf(&amp;quot;ERROR: failed parsing tls required %v&amp;quot;, v)
+		}
+	}
+	if v, exists := cfg[&amp;quot;tls_min_version&amp;quot;]; exists {
+		var t tlsVersionOption
+		err := t.Set(fmt.Sprintf(&amp;quot;%v&amp;quot;, v))
+		if err == nil {
+			newVal := fmt.Sprintf(&amp;quot;%v&amp;quot;, t.Get())
+			if newVal != &amp;quot;0&amp;quot; {
+				cfg[&amp;quot;tls_min_version&amp;quot;] = newVal
+			} else {
+				delete(cfg, &amp;quot;tls_min_version&amp;quot;)
+			}
+		} else {
+			log.Fatalf(&amp;quot;ERROR: failed parsing tls min version %v&amp;quot;, v)
+		}
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果配置文件存在并且符合toml格式，则调用&lt;code&gt;cfg.Validate&lt;/code&gt;对配置文件的各项进行进一步的合法性检查。
+主要是检查配置文件中有关tls的选项（是否支持以及支持的版本）&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;opts := nsqd.NewOptions()
+options.Resolve(opts, flagSet, cfg)
+nsqd := nsqd.New(opts)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;配置文件检查通过后，创建默认配置&lt;code&gt;opts&lt;/code&gt;，并于命令行参数和配置文件进行合并。
+合并时用到了&lt;code&gt;github.com/mreiferson/go-options&lt;/code&gt;库。
+若出现冲突，则优先级从高到低排序依次是命令行、配置文件和默认配置
+使用合并后的参数集初始化真正的nsqd对象&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;nsqd.LoadMetadata()
+err := nsqd.PersistMetadata()
+if err != nil {
+	log.Fatalf(&amp;quot;ERROR: failed to persist metadata - %s&amp;quot;, err.Error())
+}
+nsqd.Main()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最后，nsqd对象进行初始化和检查后，启动nsqd包的主函数，程序从跳转&lt;code&gt;apps/nsqd.go&lt;/code&gt;到&lt;code&gt;nsqd/nsqd.go&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;初始化:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;初始化&lt;/h1&gt;
+
+&lt;p&gt;nsqd真正开始运行前需要执行&lt;code&gt;nsqd/nsqd.go&lt;/code&gt;中的&lt;code&gt;LoadMetadata&lt;/code&gt;和&lt;code&gt;PersistMetadata&lt;/code&gt;两个函数&lt;/p&gt;
+
+&lt;h2 id=&#34;loadmetadata:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;LoadMetadata&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// nsqd/nsqd.go
+atomic.StoreInt32(&amp;amp;n.isLoading, 1)
+defer atomic.StoreInt32(&amp;amp;n.isLoading, 0)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;初始化nsqd的&lt;code&gt;LoadMetadata&lt;/code&gt;函数使用&lt;code&gt;atomic&lt;/code&gt;包中的方法来保证方法执行前和执行后&lt;code&gt;isLoading&lt;/code&gt;值的改变&lt;/p&gt;
+
+&lt;p&gt;元数据以&lt;code&gt;json&lt;/code&gt;格式保存在nsqd可执行文件目录下的*nsqd.%d.dat*中。其中&lt;code&gt;%d&lt;/code&gt;为代表该程序的ID，
+通过在启动时的命令行&lt;code&gt;worker-id&lt;/code&gt;或者配置文件中的&lt;code&gt;id&lt;/code&gt;指定。默认ID是通过对主机名散列后获得。
+因此保证了同一台机器每次启动的ID相同。&lt;/p&gt;
+
+&lt;p&gt;解析元数据的文件得到系统中的存在的topic列表，遍历topic列表中的每个topic：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;检查topic名称是否合法（长度在1-64之间，满足正则表达式&lt;code&gt;^[\.a-zA-Z0-9_-]+(#ephemeral)?$&lt;/code&gt;）
+，若不合法则忽略&lt;/li&gt;
+&lt;li&gt;使用&lt;code&gt;GetTopic&lt;/code&gt;函数通过名字获得topic对象&lt;/li&gt;
+&lt;li&gt;判断当前topic对象是否处于暂停状态，是的话调用&lt;code&gt;Pause&lt;/code&gt;函数暂停topic&lt;/li&gt;
+&lt;li&gt;获取当前topic下所有的channel，并且遍历channel，执行的操作与topic基本一致
+
+&lt;ol&gt;
+&lt;li&gt;检查channel名称是否合法（长度在1-64之间，满足正则表达式&lt;code&gt;^[\.a-zA-Z0-9_-]+(#ephemeral)?$&lt;/code&gt;）
+，若不合法则忽略&lt;/li&gt;
+&lt;li&gt;使用&lt;code&gt;GetChannel&lt;/code&gt;函数通过名字获得channel对象&lt;/li&gt;
+&lt;li&gt;判断当前channel对象是否处于暂停状态，是的话调用&lt;code&gt;Pause&lt;/code&gt;函数暂停channel&lt;/li&gt;
+&lt;/ol&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;至此，元数据的载入完成&lt;/p&gt;
+
+&lt;h2 id=&#34;persistmetadata:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;PersistMetadata&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;PersistMetadata&lt;/code&gt;将当前的topic和channel信息写入*nsqd.%d.dat*文件中,
+主要步骤是忽略&lt;code&gt;#ephemeral&lt;/code&gt;结尾的topic和channel后将topic和channel列表json序列化后写回文件中&lt;/p&gt;
+
+&lt;p&gt;写入文件时先创建扩展名为tmp的临时文件，写入内容后并保存后再调用&lt;code&gt;atomicRename&lt;/code&gt;函数将tmp文件重命名为*nsqd.%d.dat*。
+其中&lt;code&gt;atomicRename&lt;/code&gt;函数在windows和其他操作系统下实现方式不同，分别位于&lt;code&gt;nsqd/rename_windows.go&lt;/code&gt;
+和&lt;code&gt;rename.go&lt;/code&gt;中。在Linux下直接调用了&lt;code&gt;os.Rename&lt;/code&gt;函数，而Windows下则使用Win32 API实现了文件的重命名。
+这是因为go的早期版本中Windows下调用&lt;code&gt;os.Rename&lt;/code&gt;函数时如果重命名后的文件已经存在则会失败。
+这个bug在&lt;a href=&#34;https://github.com/golang/go/issues/8914&#34;&gt;os: make Rename atomic on Windows&lt;/a&gt;中提到，
+并且已经在&lt;a href=&#34;https://github.com/golang/go/commit/92c57363e0b4d193c4324e2af6902fe56b7524a0&#34;&gt;os: windows Rename should overwrite destination file.&lt;/a&gt;提交中被修复，
+因此，Golang1.5不存在这一bug&lt;/p&gt;
+
+&lt;h2 id=&#34;main:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;Main&lt;/h2&gt;
+
+&lt;p&gt;在&lt;code&gt;Main&lt;/code&gt;函数中，nsqd真正开始运行。&lt;code&gt;Main&lt;/code&gt;监听tcp，https（如果设置了相关参数），http端口并通过&lt;code&gt;WaitGroupWrapper&lt;/code&gt;的&lt;code&gt;Wrap&lt;/code&gt;函数以goroutine方式启动主要的组件。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type WaitGroupWrapper struct {
+	sync.WaitGroup
+}
+
+func (w *WaitGroupWrapper) Wrap(cb func()) {
+	w.Add(1)
+	go func() {
+		cb()
+		w.Done()
+	}()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;其中&lt;code&gt;WaitGroupWrapper&lt;/code&gt;是对&lt;code&gt;sync.WaitGroup&lt;/code&gt;的简单包装&lt;/p&gt;
+
+&lt;p&gt;执行完&lt;code&gt;Main&lt;/code&gt;函数后，配置和初始化工作全部完成，各个组件启动运行，而主goroutine会阻塞在&lt;code&gt;&amp;lt;-signalChan&lt;/code&gt;处，直到收到中断程序的信号，随后执行&lt;code&gt;nsqd.Exit&lt;/code&gt;函数。
+&lt;code&gt;Exit&lt;/code&gt;函数将进行&lt;code&gt;socket&lt;/code&gt;关闭等清理工作，随后结束整个程序的运行。&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Golang实现带优先级的channel</title>

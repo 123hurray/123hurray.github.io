@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Golang on RayXXZhang的博客</title>
-    <link>http://blog.123hurray.tk/categories/golang/</link>
-    <description>Recent content in Golang on RayXXZhang的博客</description>
+    <title>Nsq源码解析 on RayXXZhang的博客</title>
+    <link>http://blog.123hurray.tk/categories/nsq%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</link>
+    <description>Recent content in Nsq源码解析 on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Thu, 12 Nov 2015 22:50:13 +0800</lastBuildDate>
-    <atom:link href="http://blog.123hurray.tk/categories/golang/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://blog.123hurray.tk/categories/nsq%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化</title>
@@ -173,51 +173,6 @@ func (w *WaitGroupWrapper) Wrap(cb func()) {
 
 &lt;p&gt;执行完&lt;code&gt;Main&lt;/code&gt;函数后，配置和初始化工作全部完成，各个组件启动运行，而主goroutine会阻塞在&lt;code&gt;&amp;lt;-signalChan&lt;/code&gt;处，直到收到中断程序的信号，随后执行&lt;code&gt;nsqd.Exit&lt;/code&gt;函数。
 &lt;code&gt;Exit&lt;/code&gt;函数将进行&lt;code&gt;socket&lt;/code&gt;关闭等清理工作，随后结束整个程序的运行。&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Golang实现带优先级的channel</title>
-      <link>http://blog.123hurray.tk/2015/10/29/golang_priority_channel/</link>
-      <pubDate>Thu, 29 Oct 2015 15:32:52 +0800</pubDate>
-      
-      <guid>http://blog.123hurray.tk/2015/10/29/golang_priority_channel/</guid>
-      <description>&lt;p&gt;一般Go语言同时使用多个&lt;code&gt;channel&lt;/code&gt;的方法是使用&lt;code&gt;select&lt;/code&gt;/&lt;code&gt;case&lt;/code&gt;语句配合&lt;code&gt;&amp;lt;-&lt;/code&gt;操作符，比如&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;select {
-case &amp;lt;- chan1:
-	// do something
-case &amp;lt;- chan2:
-	// do something
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;但是这种实现方式下&lt;code&gt;chan1&lt;/code&gt;和&lt;code&gt;chan2&lt;/code&gt;是同等优先级的。如果要实现带优先级的&lt;code&gt;channel&lt;/code&gt;则需要用到&lt;code&gt;defalut&lt;/code&gt;语句。&lt;/p&gt;
-
-&lt;p&gt;在go语言中，如果&lt;code&gt;select&lt;/code&gt;/&lt;code&gt;case&lt;/code&gt;中没有&lt;code&gt;default&lt;/code&gt;子句，则程序会阻塞在&lt;code&gt;select&lt;/code&gt;中，直到其中一个&lt;code&gt;case&lt;/code&gt;语句接收到了数据。
-如果有&lt;code&gt;default&lt;/code&gt;语句，则不会阻塞，如果&lt;code&gt;case&lt;/code&gt;接收到数据，就执行&lt;code&gt;case&lt;/code&gt;中的语句，如果&lt;code&gt;case&lt;/code&gt;未收到信号，则会执行&lt;code&gt;defalut&lt;/code&gt;中的语句，随后跳出&lt;code&gt;select&lt;/code&gt;块。&lt;/p&gt;
-
-&lt;p&gt;使用这个特性可以实现带优先级的&lt;code&gt;channel&lt;/code&gt;队列。以2个优先级的&lt;code&gt;channel&lt;/code&gt;举例，实现方法是使用多层&lt;code&gt;select&lt;/code&gt;，将高优先级&lt;code&gt;channel&lt;/code&gt;放在最外层&lt;code&gt;select&lt;/code&gt;语句的&lt;code&gt;case&lt;/code&gt;后，并跟上一个&lt;code&gt;default&lt;/code&gt;语句以免当高优先级的&lt;code&gt;channel&lt;/code&gt;没有数据时阻塞。
-&lt;code&gt;defalut&lt;/code&gt;内依然是一个&lt;code&gt;select&lt;/code&gt;语句，在这个&lt;code&gt;select&lt;/code&gt;语句中，将高优先级和低优先级的&lt;code&gt;case&lt;/code&gt;都放入，并且没有&lt;code&gt;default&lt;/code&gt;语句。这样内层&lt;code&gt;select&lt;/code&gt;就会阻塞直到其中一个&lt;code&gt;case&lt;/code&gt;收到数据。&lt;/p&gt;
-
-&lt;p&gt;这种实现方式相当于高优先级的&lt;code&gt;channel&lt;/code&gt;比低优先级的多了一次被处理的机会，即外层&lt;code&gt;select&lt;/code&gt;，只有高优先级没有数据时，才会执行内层&lt;code&gt;select&lt;/code&gt;，此时先产生数据的&lt;code&gt;channel&lt;/code&gt;先被执行。&lt;/p&gt;
-
-&lt;p&gt;也就是说，当高优先级和低优先级都有数据时，高优先级先被处理，也就是实现了优先级。示例如下：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;for {
-	select {
-	case data := &amp;lt;- highChan:
-		handleHigh(data)
-	default:
-		select {
-		case data := &amp;lt;- highChan:
-			handleHigh(data)
-		case data := &amp;lt;- lowChan:
-			handleLow(data)
-		}
-	}
-}
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     

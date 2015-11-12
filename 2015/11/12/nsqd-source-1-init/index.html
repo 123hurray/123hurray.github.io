@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-  <title>Golang实现带优先级的channel</title>
+  <title>nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化</title>
   <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
   <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
@@ -245,14 +245,14 @@
 <div class="content">
 
   <div class="article">
-    <div class="title"><div class="main single">Golang实现带优先级的channel
+    <div class="title"><div class="main single">nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化
     
       
 
 <div class="categories">
 	<span>分类: </span>
 	
-	  <a href="http://blog.123hurray.tk/categories/%E6%95%99%E7%A8%8B/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>教程</paper-button></a>
+	  <a href="http://blog.123hurray.tk/categories/nsq%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>nsq源码解析</paper-button></a>
 	
 	  <a href="http://blog.123hurray.tk/categories/golang/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Golang</paper-button></a>
 	
@@ -261,42 +261,163 @@
      
 	</div></div>
 	<hr style="clear:both;">
-    <div class="markdown-body"><p>一般Go语言同时使用多个<code>channel</code>的方法是使用<code>select</code>/<code>case</code>语句配合<code>&lt;-</code>操作符，比如</p>
+    <div class="markdown-body">
 
-<pre><code class="language-go">select {
-case &lt;- chan1:
-	// do something
-case &lt;- chan2:
-	// do something
-}
+<h1 id="配置解析:e76b703d5211370058cbe6eb0135f2ee">配置解析</h1>
+
+<p>nsqd的主函数位于<code>apps/nsqd.go</code>中的<code>main</code>函数</p>
+
+<pre><code class="language-go">flagSet := nsqFlagset()
+flagSet.Parse(os.Args[1:])
 </code></pre>
 
-<p>但是这种实现方式下<code>chan1</code>和<code>chan2</code>是同等优先级的。如果要实现带优先级的<code>channel</code>则需要用到<code>defalut</code>语句。</p>
+<p>首先<code>main</code>函数调用<code>nsqFlagset</code>和<code>Parse</code>进行命令行参数集初始化，
+然后判断<code>version</code>参数是否存在，若存在，则打印版本号并退出程序</p>
 
-<p>在go语言中，如果<code>select</code>/<code>case</code>中没有<code>default</code>子句，则程序会阻塞在<code>select</code>中，直到其中一个<code>case</code>语句接收到了数据。
-如果有<code>default</code>语句，则不会阻塞，如果<code>case</code>接收到数据，就执行<code>case</code>中的语句，如果<code>case</code>未收到信号，则会执行<code>defalut</code>中的语句，随后跳出<code>select</code>块。</p>
+<pre><code class="language-go">signalChan := make(chan os.Signal, 1)
+signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+//...
+&lt;-signalChan
+nsqd.Exit()
+</code></pre>
 
-<p>使用这个特性可以实现带优先级的<code>channel</code>队列。以2个优先级的<code>channel</code>举例，实现方法是使用多层<code>select</code>，将高优先级<code>channel</code>放在最外层<code>select</code>语句的<code>case</code>后，并跟上一个<code>default</code>语句以免当高优先级的<code>channel</code>没有数据时阻塞。
-<code>defalut</code>内依然是一个<code>select</code>语句，在这个<code>select</code>语句中，将高优先级和低优先级的<code>case</code>都放入，并且没有<code>default</code>语句。这样内层<code>select</code>就会阻塞直到其中一个<code>case</code>收到数据。</p>
+<p>接下来钩住系统的<code>syscall.SIGINT</code>和<code>syscall.SIGTERM</code>消息，用来阻塞主goroutine防止退出</p>
 
-<p>这种实现方式相当于高优先级的<code>channel</code>比低优先级的多了一次被处理的机会，即外层<code>select</code>，只有高优先级没有数据时，才会执行内层<code>select</code>，此时先产生数据的<code>channel</code>先被执行。</p>
+<pre><code class="language-go">var cfg config
+configFile := flagSet.Lookup(&quot;config&quot;).Value.String()
+if configFile != &quot;&quot; {
+	_, err := toml.DecodeFile(configFile, &amp;cfg)
+	if err != nil {
+		log.Fatalf(&quot;ERROR: failed to load config file %s - %s&quot;, configFile, err.Error())
+	}
+}
+cfg.Validate()
+</code></pre>
 
-<p>也就是说，当高优先级和低优先级都有数据时，高优先级先被处理，也就是实现了优先级。示例如下：</p>
+<p>随后判断<code>config</code>参数是否存在，若存在的话还需进行配置文件的读取，
+nsq使用toml格式的配置文件，并通过<code>github.com/BurntSushi/toml</code>库进行配置文件的读取和解析</p>
 
-<pre><code class="language-go">for {
-	select {
-	case data := &lt;- highChan:
-		handleHigh(data)
-	default:
-		select {
-		case data := &lt;- highChan:
-			handleHigh(data)
-		case data := &lt;- lowChan:
-			handleLow(data)
+<pre><code class="language-go">func (cfg config) Validate() {
+	// special validation/translation
+	if v, exists := cfg[&quot;tls_required&quot;]; exists {
+		var t tlsRequiredOption
+		err := t.Set(fmt.Sprintf(&quot;%v&quot;, v))
+		if err == nil {
+			cfg[&quot;tls_required&quot;] = t.String()
+		} else {
+			log.Fatalf(&quot;ERROR: failed parsing tls required %v&quot;, v)
+		}
+	}
+	if v, exists := cfg[&quot;tls_min_version&quot;]; exists {
+		var t tlsVersionOption
+		err := t.Set(fmt.Sprintf(&quot;%v&quot;, v))
+		if err == nil {
+			newVal := fmt.Sprintf(&quot;%v&quot;, t.Get())
+			if newVal != &quot;0&quot; {
+				cfg[&quot;tls_min_version&quot;] = newVal
+			} else {
+				delete(cfg, &quot;tls_min_version&quot;)
+			}
+		} else {
+			log.Fatalf(&quot;ERROR: failed parsing tls min version %v&quot;, v)
 		}
 	}
 }
 </code></pre>
+
+<p>如果配置文件存在并且符合toml格式，则调用<code>cfg.Validate</code>对配置文件的各项进行进一步的合法性检查。
+主要是检查配置文件中有关tls的选项（是否支持以及支持的版本）</p>
+
+<pre><code class="language-go">opts := nsqd.NewOptions()
+options.Resolve(opts, flagSet, cfg)
+nsqd := nsqd.New(opts)
+</code></pre>
+
+<p>配置文件检查通过后，创建默认配置<code>opts</code>，并于命令行参数和配置文件进行合并。
+合并时用到了<code>github.com/mreiferson/go-options</code>库。
+若出现冲突，则优先级从高到低排序依次是命令行、配置文件和默认配置
+使用合并后的参数集初始化真正的nsqd对象</p>
+
+<pre><code class="language-go">nsqd.LoadMetadata()
+err := nsqd.PersistMetadata()
+if err != nil {
+	log.Fatalf(&quot;ERROR: failed to persist metadata - %s&quot;, err.Error())
+}
+nsqd.Main()
+</code></pre>
+
+<p>最后，nsqd对象进行初始化和检查后，启动nsqd包的主函数，程序从跳转<code>apps/nsqd.go</code>到<code>nsqd/nsqd.go</code></p>
+
+<h1 id="初始化:e76b703d5211370058cbe6eb0135f2ee">初始化</h1>
+
+<p>nsqd真正开始运行前需要执行<code>nsqd/nsqd.go</code>中的<code>LoadMetadata</code>和<code>PersistMetadata</code>两个函数</p>
+
+<h2 id="loadmetadata:e76b703d5211370058cbe6eb0135f2ee">LoadMetadata</h2>
+
+<pre><code class="language-go">// nsqd/nsqd.go
+atomic.StoreInt32(&amp;n.isLoading, 1)
+defer atomic.StoreInt32(&amp;n.isLoading, 0)
+</code></pre>
+
+<p>初始化nsqd的<code>LoadMetadata</code>函数使用<code>atomic</code>包中的方法来保证方法执行前和执行后<code>isLoading</code>值的改变</p>
+
+<p>元数据以<code>json</code>格式保存在nsqd可执行文件目录下的*nsqd.%d.dat*中。其中<code>%d</code>为代表该程序的ID，
+通过在启动时的命令行<code>worker-id</code>或者配置文件中的<code>id</code>指定。默认ID是通过对主机名散列后获得。
+因此保证了同一台机器每次启动的ID相同。</p>
+
+<p>解析元数据的文件得到系统中的存在的topic列表，遍历topic列表中的每个topic：</p>
+
+<ol>
+<li>检查topic名称是否合法（长度在1-64之间，满足正则表达式<code>^[\.a-zA-Z0-9_-]+(#ephemeral)?$</code>）
+，若不合法则忽略</li>
+<li>使用<code>GetTopic</code>函数通过名字获得topic对象</li>
+<li>判断当前topic对象是否处于暂停状态，是的话调用<code>Pause</code>函数暂停topic</li>
+<li>获取当前topic下所有的channel，并且遍历channel，执行的操作与topic基本一致
+
+<ol>
+<li>检查channel名称是否合法（长度在1-64之间，满足正则表达式<code>^[\.a-zA-Z0-9_-]+(#ephemeral)?$</code>）
+，若不合法则忽略</li>
+<li>使用<code>GetChannel</code>函数通过名字获得channel对象</li>
+<li>判断当前channel对象是否处于暂停状态，是的话调用<code>Pause</code>函数暂停channel</li>
+</ol></li>
+</ol>
+
+<p>至此，元数据的载入完成</p>
+
+<h2 id="persistmetadata:e76b703d5211370058cbe6eb0135f2ee">PersistMetadata</h2>
+
+<p><code>PersistMetadata</code>将当前的topic和channel信息写入*nsqd.%d.dat*文件中,
+主要步骤是忽略<code>#ephemeral</code>结尾的topic和channel后将topic和channel列表json序列化后写回文件中</p>
+
+<p>写入文件时先创建扩展名为tmp的临时文件，写入内容后并保存后再调用<code>atomicRename</code>函数将tmp文件重命名为*nsqd.%d.dat*。
+其中<code>atomicRename</code>函数在windows和其他操作系统下实现方式不同，分别位于<code>nsqd/rename_windows.go</code>
+和<code>rename.go</code>中。在Linux下直接调用了<code>os.Rename</code>函数，而Windows下则使用Win32 API实现了文件的重命名。
+这是因为go的早期版本中Windows下调用<code>os.Rename</code>函数时如果重命名后的文件已经存在则会失败。
+这个bug在<a href="https://github.com/golang/go/issues/8914">os: make Rename atomic on Windows</a>中提到，
+并且已经在<a href="https://github.com/golang/go/commit/92c57363e0b4d193c4324e2af6902fe56b7524a0">os: windows Rename should overwrite destination file.</a>提交中被修复，
+因此，Golang1.5不存在这一bug</p>
+
+<h2 id="main:e76b703d5211370058cbe6eb0135f2ee">Main</h2>
+
+<p>在<code>Main</code>函数中，nsqd真正开始运行。<code>Main</code>监听tcp，https（如果设置了相关参数），http端口并通过<code>WaitGroupWrapper</code>的<code>Wrap</code>函数以goroutine方式启动主要的组件。</p>
+
+<pre><code class="language-go">type WaitGroupWrapper struct {
+	sync.WaitGroup
+}
+
+func (w *WaitGroupWrapper) Wrap(cb func()) {
+	w.Add(1)
+	go func() {
+		cb()
+		w.Done()
+	}()
+}
+</code></pre>
+
+<p>其中<code>WaitGroupWrapper</code>是对<code>sync.WaitGroup</code>的简单包装</p>
+
+<p>执行完<code>Main</code>函数后，配置和初始化工作全部完成，各个组件启动运行，而主goroutine会阻塞在<code>&lt;-signalChan</code>处，直到收到中断程序的信号，随后执行<code>nsqd.Exit</code>函数。
+<code>Exit</code>函数将进行<code>socket</code>关闭等清理工作，随后结束整个程序的运行。</p>
 </div>
 	
 	<hr style="clear:both; margin:30px -16px; height:1px;border:none; background-color:#eee">
@@ -304,10 +425,10 @@ case &lt;- chan2:
 	
 
 		<div class="tags">
-      <span>2015年10月29日</span>
+      <span>2015年11月12日</span>
       
         
-          <a href="http://blog.123hurray.tk/tags/channel/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>channel</paper-button></a>
+          <a href="http://blog.123hurray.tk/tags/nsqd/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>nsqd</paper-button></a>
         
        
     </div>
@@ -417,18 +538,18 @@ case &lt;- chan2:
   }
   
   </style>
-	<div class="ds-thread" data-thread-key="/2015/10/29/golang_priority_channel/" data-title="Golang实现带优先级的channel" data-url="http://blog.123hurray.tk/2015/10/29/golang_priority_channel/"></div>
+	<div class="ds-thread" data-thread-key="/2015/11/12/nsqd-source-1-init/" data-title="nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化" data-url="http://blog.123hurray.tk/2015/11/12/nsqd-source-1-init/"></div>
   
   </div>
 </div>
 </paper-item>
 <paper-item>
   
-    <a href="http://blog.123hurray.tk/2015/11/12/nsqd-source-1-init/"><paper-fab icon="chevron-left"></paper-fab></a>
+    <paper-fab disabled icon="chevron-left"></paper-fab>
   
     <div class="flex"></div>
   
-    <a href="http://blog.123hurray.tk/2015/09/24/poj1059/"><paper-fab icon="chevron-right"></paper-fab></a>
+    <a href="http://blog.123hurray.tk/2015/10/29/golang_priority_channel/"><paper-fab icon="chevron-right"></paper-fab></a>
   
 </paper-item>
 
