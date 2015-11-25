@@ -1,12 +1,11 @@
 
-
 <!doctype html>
 <html lang="zh-cn">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-  <title>Tags</title>
+  <title>Gradle</title>
   <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
   <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
@@ -242,63 +241,64 @@
       </paper-toolbar>
 
 
-<link rel="import" href="http://blog.123hurray.tk/bower_components/paper-header-panel/paper-header-panel.html">
-<style is="custom-style">
+<paper-item>
+<div class="content" id="articles">
 
-      paper-header-panel {
-        width: 100%;
-        @apply(--shadow-elevation-2dp);
-      }
-      .paper-header {
-        height: 60px;
-        font-size: 16px;
-        line-height: 60px;
-        padding: 0 10px;
-        color: white;
-        transition: height 0.2s;
-      }
-	  .green .paper-header {
-        background-color: var(--paper-green-500);
-      }
-.paper-header.tall {
-	font-size: 30px
-}
-.cover {
-	margin: 60px;
-}
-</style>
-<paper-header-panel mode="cover" class="green">
-<div class="paper-header tall">
 
-标签
+  
+  <paper-card>
+		
+	  <div class="card-content">
+		  <div class="title">
+			<a href="http://blog.123hurray.tk/2015/10/29/migrate_to_android_studio/" ><div class="main">从Eclipse迁移到Android Studio</div></a>
+			
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://blog.123hurray.tk/categories/java/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Java</paper-button></a>
+	
+	  <a href="http://blog.123hurray.tk/categories/android/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Android</paper-button></a>
+	
+	  <a href="http://blog.123hurray.tk/categories/%E6%95%99%E7%A8%8B/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>教程</paper-button></a>
+	
+</div>
+ 
+		  </div>
+	  </div>
+	  
+	  <div class="card-actions">
+		
+
+		<div class="tags">
+      <span>2015年10月29日</span>
+      
+        
+          <a href="http://blog.123hurray.tk/tags/android-studio/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>Android Studio</paper-button></a>
+        
+          <a href="http://blog.123hurray.tk/tags/gradle/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>gradle</paper-button></a>
+        
+       
+    </div>
+	  </div>
+  </paper-card>
+ 
+
 
 </div>
-<div class="content cover" style="min-height:300px">
+</paper-item>
 
-<paper-menu>
+<paper-item>
   
-    <a href="http://blog.123hurray.tk/tags/android-studio"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">android-studio</div> 1</paper-item></a>
+    <paper-fab disabled icon="chevron-left"></paper-fab>
   
-    <a href="http://blog.123hurray.tk/tags/channel"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">channel</div> 1</paper-item></a>
+    <div class="flex"></div>
   
-    <a href="http://blog.123hurray.tk/tags/gradle"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">gradle</div> 1</paper-item></a>
+    <paper-fab disabled icon="chevron-right"></paper-fab>
   
-    <a href="http://blog.123hurray.tk/tags/hugo"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">hugo</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/map"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">map</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/markdown"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">markdown</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/nsqd"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">nsqd</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/polymer"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">polymer</div> 1</paper-item></a>
-  
-    <a href="http://blog.123hurray.tk/tags/pyinstaller"><paper-item><iron-icon icon="loyalty"></iron-icon>　<div class="flex">pyinstaller</div> 1</paper-item></a>
-  
-</paper-menu>
+</paper-item>
 
-</div>
-</paper-header-panel>
+
 
       <paper-item>
         <div class="copyright">© 2015 Copyright RayXXZhang</div>

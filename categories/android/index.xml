@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Android on RayXXZhang的博客</title>
+    <link>http://blog.123hurray.tk/categories/android/</link>
+    <description>Recent content in Android on RayXXZhang的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>© 2015 Copyright RayXXZhang</copyright>
+    <lastBuildDate>Thu, 29 Oct 2015 16:48:16 +0800</lastBuildDate>
+    <atom:link href="http://blog.123hurray.tk/categories/android/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>从Eclipse迁移到Android Studio</title>
+      <link>http://blog.123hurray.tk/2015/10/29/migrate_to_android_studio/</link>
+      <pubDate>Thu, 29 Oct 2015 16:48:16 +0800</pubDate>
+      
+      <guid>http://blog.123hurray.tk/2015/10/29/migrate_to_android_studio/</guid>
+      <description>
+
+&lt;p&gt;Android Studio发布正式版后，Google的重心转向AS，以后可能也会逐步停止对Eclipse的支持，而且目前开源项目有很多以及不支持Eclipse。因此决心将项目转到Android Studio进行开发。&lt;/p&gt;
+
+&lt;h2 id=&#34;安装:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;Android Studio的安装需要联网并且下载Android SDK和gradle等等才能使用。
+同时AS的使用需要配合相应位数的JDK，并且JDK的路径需要设置到JAVA_HOME环境变量。&lt;/p&gt;
+
+&lt;p&gt;AS的安装包大约300-400MB，但安装好后加上SDK等等其他依赖，占用空间可能达到8GB以上。
+因此如果能获取到AS安装后的文件也可以直接复制使用。复制时需要复制Android Studio安装文件夹，SDK文件夹，以及个人目录下的.gradle和.androidstudiox.y文件夹，其中x.y为AS的版本号，其中存放着AS的配置。&lt;/p&gt;
+
+&lt;h2 id=&#34;导入:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;导入&lt;/h2&gt;
+
+&lt;p&gt;Eclipse项目迁移到AS的第一步是更新Eclipse的AJDT插件，然后在文件菜单选择导出，将Eclipse工程导出成AS工程。导出后会在目录下生成build.gradle文件，
+然后在AS选择导入非AS工程的选项即可导入，第一次使用由于需要分析构建整个项目，所以速度会比较慢。&lt;/p&gt;
+
+&lt;h2 id=&#34;注意事项:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;注意事项&lt;/h2&gt;
+
+&lt;h3 id=&#34;so库的支持:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;so库的支持&lt;/h3&gt;
+
+&lt;p&gt;如果是纯java的项目，导入后就基本能编译运行了，如果项目中还依赖so库，
+可以通过在build.gradle文件中添加jniLibs.srcDirs = [&amp;lsquo;so文件的目录&amp;rsquo;]来导入so库&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-gradle&#34;&gt;android {
+	// 其他配置
+	sourceSets {
+		main {
+			//其他配置
+			jniLibs.srcDirs = [&#39;libs&#39;]
+		}
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;meta-inf中文件重复的问题:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;META-INF中文件重复的问题&lt;/h3&gt;
+
+&lt;p&gt;有些第三方库会在META-INF文件夹中放一些版权说明的文件，如果不止一个库在放了同名的文件，
+在打包时gradle就无法决定应META-INF文件夹中应该使用哪个文件。&lt;/p&gt;
+
+&lt;p&gt;这种情况下，可以通过在build.gradle文件中排除这些文件来解决。
+版权文件的文件名通常是LICENSE, NOTICE, license.txt, notice.txt之一。
+因此可以通过如下配置排除：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-gradle&#34;&gt;android {
+	// 其他配置
+	packagingOptions {
+		exclude &#39;META-INF/LICENSE&#39;
+		exclude &#39;META-INF/NOTICE&#39;
+		exclude &#39;META-INF/license.txt&#39;
+		exclude &#39;META-INF/notice.txt&#39;
+		// 还可添加其他要排除的文件
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;该方法也可以用于排除其他不想被打包到APK里的文件。&lt;/p&gt;
+
+&lt;h2 id=&#34;小技巧:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;小技巧&lt;/h2&gt;
+
+&lt;h3 id=&#34;动态设置编译版本号:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;动态设置编译版本号&lt;/h3&gt;
+
+&lt;p&gt;build.gradle文件中可以设置编译出的APK的版本号，如果设置了版本号，则会覆盖Manifest.xml中设置的版本号。&lt;/p&gt;
+
+&lt;p&gt;这样，就给我们提供了一个动态修改编译版本号的方法。如果版本控制使用了SVN，就可以通过编写如下函数来实现动态获取SVN版本号和编译时间：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-gradle&#34;&gt;
+def getVersionCode = {
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine &#39;用于获取版本号的命令&#39;
+            standardOutput = code
+        }
+        return Integer.valueOf(code.toString().split(&amp;quot;\r\n&amp;quot;)[0])
+    }
+    catch (ignored) {
+        return 0;
+    }
+}
+def getVersionName = {
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine &#39;用于获取版本号的命令&#39;
+            standardOutput = code
+        }
+        def date = new ByteArrayOutputStream()
+        exec {
+            commandLine &#39;用于获取编译时间的命令&#39;
+            standardOutput = date
+        }
+        return code.toString().split(&amp;quot;\r\n&amp;quot;)[0] + &amp;quot;.&amp;quot; + date.toString().split(&amp;quot;\n&amp;quot;)[0]
+    }
+    catch (ignored) {
+        return &amp;quot;&amp;quot;;
+    }
+}
+
+android {
+    updateSVNInfo()
+    defaultConfig {
+        versionCode getVersionCode()
+        versionName getVersionName()
+        minSdkVersion 8
+        targetSdkVersion 23
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;apk签名配置:f5e1f5a0cf21ff198e5b3684e50f3611&#34;&gt;APK签名配置&lt;/h3&gt;
+
+&lt;p&gt;在Eclipse里debug版本的签名只能使用默认的签名，而在Android Studio中可以通过build.gradle来配置签名所使用的证书：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-gradle&#34;&gt;android {
+	// 其他配置
+	signingConfigs {
+        debug {
+            storeFile file(&amp;quot;签名密钥路径&amp;quot;)
+            keyAlias &#39;密钥Alias&#39;
+            keyPassword &#39;密钥密码&#39;
+            storePassword &#39;存储密码&#39;
+        }
+		// 可以指定其他编译类型的配置，如release
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;配置debug和release使用一样的签名就避免了在debug和release混合安装的时候出现签名错误需要重新卸载后再安装的问题。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
