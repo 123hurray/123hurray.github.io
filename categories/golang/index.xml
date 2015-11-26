@@ -7,8 +7,655 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Thu, 12 Nov 2015 22:50:13 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 25 Nov 2015 16:09:44 +0800</lastBuildDate>
     <atom:link href="http://blog.123hurray.tk/categories/golang/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>nsq源码阅读笔记之nsqd（二）——Topic</title>
+      <link>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics_and_channels/</link>
+      <pubDate>Wed, 25 Nov 2015 16:09:44 +0800</pubDate>
+      
+      <guid>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics_and_channels/</guid>
+      <description>
+
+&lt;p&gt;与&lt;strong&gt;Topic&lt;/strong&gt;相关的代码主要位于&lt;code&gt;nsqd/nsqd.go&lt;/code&gt;, &lt;code&gt;nsqd/topic.go&lt;/code&gt;中。&lt;/p&gt;
+
+&lt;h1 id=&#34;topic的获取:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的获取&lt;/h1&gt;
+
+&lt;p&gt;Topic通过&lt;code&gt;GetTopic&lt;/code&gt;函数获取&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// GetTopic performs a thread safe operation
+// to return a pointer to a Topic object (potentially new)
+func (n *NSQD) GetTopic(topicName string) *Topic {
+	n.Lock()
+
+	t, ok := n.topicMap[topicName]
+	if ok {
+		n.Unlock()
+		return t
+	}
+	deleteCallback := func(t *Topic) {
+		n.DeleteExistingTopic(t.name)
+	}
+	t = NewTopic(topicName, &amp;amp;context{n}, deleteCallback)
+	n.topicMap[topicName] = t
+
+	n.logf(&amp;quot;TOPIC(%s): created&amp;quot;, t.name)
+
+	// release our global nsqd lock, and switch to a more granular topic lock while we init our
+	// channels from lookupd. This blocks concurrent PutMessages to this topic.
+	t.Lock()
+	n.Unlock()
+
+	// if using lookupd, make a blocking call to get the topics, and immediately create them.
+	// this makes sure that any message received is buffered to the right channels
+	lookupdHTTPAddrs := n.lookupdHTTPAddrs()
+	if len(lookupdHTTPAddrs) &amp;gt; 0 {
+		channelNames, _ := n.ci.GetLookupdTopicChannels(t.name, lookupdHTTPAddrs)
+		for _, channelName := range channelNames {
+			if strings.HasSuffix(channelName, &amp;quot;#ephemeral&amp;quot;) {
+				// we don&#39;t want to pre-create ephemeral channels
+				// because there isn&#39;t a client connected
+				continue
+			}
+			t.getOrCreateChannel(channelName)
+		}
+	}
+
+	t.Unlock()
+
+	// NOTE: I would prefer for this to only happen in topic.GetChannel() but we&#39;re special
+	// casing the code above so that we can control the locks such that it is impossible
+	// for a message to be written to a (new) topic while we&#39;re looking up channels
+	// from lookupd...
+	//
+	// update messagePump state
+	select {
+	case t.channelUpdateChan &amp;lt;- 1:
+	case &amp;lt;-t.exitChan:
+	}
+	return t
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;GetTopic&lt;/code&gt;函数用于获取topic对象，首先先尝试从&lt;code&gt;topicMap&lt;/code&gt;表中获取，如果指定的topic存在，则直接返回topic对象。&lt;/p&gt;
+
+&lt;p&gt;当topic不存在时需要新建一个topic，加入到&lt;code&gt;topicMap&lt;/code&gt;中，
+如果启用了nsqlookupd则需要从&lt;code&gt;lookupd&lt;/code&gt;中获取该topic的所有channel，在去除&lt;code&gt;#ephemeral&lt;/code&gt;结尾的临时channel后加入到topic中。&lt;/p&gt;
+
+&lt;p&gt;其中锁的使用值得学习：在调用完nsqd的变量后转而进行topic操作，这时候程序转而使用topic的小粒度的锁，释放了nsqd全局的大粒度锁，
+在保证线程安全的同时减少了效率上的损失。&lt;/p&gt;
+
+&lt;p&gt;在创建新的topic后需要向&lt;code&gt;channelUpdateChan&lt;/code&gt;发送消息来更新topic中的channel，而&lt;code&gt;channelUpdateChan&lt;/code&gt;是一个阻塞的go channel,
+所以此处使用了&lt;code&gt;select&lt;/code&gt;，并同时监听了&lt;code&gt;exitChan&lt;/code&gt;。如果此时&lt;code&gt;exitChan&lt;/code&gt;收到信号则可以正常退出&lt;code&gt;select&lt;/code&gt;。
+如果没有&lt;code&gt;case &amp;lt;-t.exitChan&lt;/code&gt;这句话，
+则可能接收&lt;code&gt;channelUpdateChan&lt;/code&gt;的go channel已经退出，但是发送端却还在阻塞中。当然，可以通过退出主go channel来结束程序，
+但这样做可能造成部分析构的代码没有得到执行，而且在部分场景下，
+只是程序的一个go channel结束运行（在nsqd的这个例子中是topic被删除）而非整个程序退出。
+为了避免这个问题，nsqd许多向go channal发送消息的地方都使用了这种机制。&lt;/p&gt;
+
+&lt;p&gt;以下是这种机制的一个示例，
+可以通过&lt;a href=&#34;http://play.golang.org/p/xLaZcgjypS&#34;&gt;The Go Playground&lt;/a&gt;来运行:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
+
+import (
+	&amp;quot;fmt&amp;quot;
+	&amp;quot;time&amp;quot;
+)
+
+func main() {
+	workerChan := make(chan string)
+	exitChan := make(chan int)
+	go func() {
+		&amp;lt;-time.After(time.Second * 1)
+		select {
+		case workerChan &amp;lt;- &amp;quot;Task 1&amp;quot;:
+		}
+		fmt.Println(&amp;quot;Task 1 exit&amp;quot;)
+	}()
+	go func() {
+		select {
+		case workerChan &amp;lt;- &amp;quot;Task 2&amp;quot;:
+		case &amp;lt;- exitChan:
+		}
+		fmt.Println(&amp;quot;Task 2 exit&amp;quot;)
+	}()
+	
+	go func() {
+		select {
+		case &amp;lt;-time.After(time.Second * 2):
+		}
+		fmt.Println(&amp;quot;Close exitChan&amp;quot;)
+		close(exitChan)
+		&amp;lt;-time.After(time.Second * 4)
+		close(workerChan)
+	}()
+	
+	&amp;lt;- time.After(time.Second * 3)
+	fmt.Println(&amp;quot;Start receive from workerChan&amp;quot;)
+	loop:
+	for {
+		select {
+		case i, ok := &amp;lt;-workerChan:
+			if ok {
+				fmt.Println(&amp;quot;Receive:&amp;quot;, i)
+			} else {
+				break loop
+			}
+		
+		}
+	}
+		
+	
+	&amp;lt;- time.After(time.Second * 1)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;运行程序，得到以下运行结果：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;Close exitChan
+Task 2 exit
+Start receive from workerChan
+Receive: Task 1
+Task 1 exit
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Task1和Task2是两个生产者，它们都向workerChan发送消息，其中Task2立即发送，Task1有一定延时，workerChan是一个阻塞的go channel。
+同时，有一个go channel发送结束信号（关闭exitChan）。随后开启消费者，接收workerChan的消息，
+Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。&lt;/p&gt;
+
+&lt;p&gt;从结果可以看出，当exitChan被关闭时，Task2结束对workerChan的阻塞，取消了像worker发送信号，同时结束了自身。
+而没有监听exitChan的Task1依然在阻塞，直到被读取后才退出。&lt;/p&gt;
+
+&lt;p&gt;示例说明了可以通过对exitChan的使用来结束对阻塞go channel的等待。需要说明的是，在真实场景中，
+消费者在发出结束的意图后可能并不会去处理尚未被处理的消息，所以像示例中的Task1是无法正常结束的。&lt;/p&gt;
+
+&lt;h1 id=&#34;topic的创建:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的创建&lt;/h1&gt;
+
+&lt;p&gt;当&lt;code&gt;GetTopic&lt;/code&gt;未在已存在的topic中找到指定topic时，就会使用&lt;code&gt;NewTopic&lt;/code&gt;函数新建一个&lt;code&gt;Topic&lt;/code&gt;对象。
+&lt;code&gt;Topic&lt;/code&gt;和&lt;code&gt;NewTopic&lt;/code&gt;都位于&lt;code&gt;nsqd/topic.go&lt;/code&gt;中。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewTopic(topicName string, ctx *context, deleteCallback func(*Topic)) *Topic {
+	t := &amp;amp;Topic{
+		name:              topicName,
+		channelMap:        make(map[string]*Channel),
+		memoryMsgChan:     make(chan *Message, ctx.nsqd.getOpts().MemQueueSize),
+		exitChan:          make(chan int),
+		channelUpdateChan: make(chan int),
+		ctx:               ctx,
+		pauseChan:         make(chan bool),
+		deleteCallback:    deleteCallback,
+	}
+
+	if strings.HasSuffix(topicName, &amp;quot;#ephemeral&amp;quot;) {
+		t.ephemeral = true
+		t.backend = newDummyBackendQueue()
+	} else {
+		t.backend = newDiskQueue(topicName,
+			ctx.nsqd.getOpts().DataPath,
+			ctx.nsqd.getOpts().MaxBytesPerFile,
+			int32(minValidMsgLength),
+			int32(ctx.nsqd.getOpts().MaxMsgSize)+minValidMsgLength,
+			ctx.nsqd.getOpts().SyncEvery,
+			ctx.nsqd.getOpts().SyncTimeout,
+			ctx.nsqd.getOpts().Logger)
+	}
+
+	t.waitGroup.Wrap(func() { t.messagePump() })
+
+	t.ctx.nsqd.Notify(t)
+
+	return t
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;NewTopic&lt;/code&gt;函数首先创建了一个&lt;code&gt;Topic&lt;/code&gt;结构，然后判断该topic是不是一个临时topic。topic中有个名为&lt;code&gt;backend&lt;/code&gt;的变量，
+其类型为&lt;code&gt;Backend&lt;/code&gt;接口。对于临时topic，
+消息只储存在内存中，因此&lt;code&gt;backend&lt;/code&gt;变量使用&lt;code&gt;newDummyBackendQueue&lt;/code&gt;函数初始化。该函数生成一个无任何功能的&lt;code&gt;dummyBackendQueue&lt;/code&gt;结构；
+对于永久的topic，&lt;code&gt;backend&lt;/code&gt;使用&lt;code&gt;newDiskQueue&lt;/code&gt;函数返回&lt;code&gt;diskQueue&lt;/code&gt;类型赋值，并开启新的goroutine来进行数据的持久化。
+&lt;code&gt;dummyBackendQueue&lt;/code&gt;和&lt;code&gt;diskQueue&lt;/code&gt;都实现了&lt;code&gt;Backend&lt;/code&gt;接口，因此，在之后可以使用&lt;code&gt;backend&lt;/code&gt;统一处理。&lt;/p&gt;
+
+&lt;p&gt;随后，&lt;code&gt;NewTopic&lt;/code&gt;函数开启一个新的goroutine来执行&lt;code&gt;messagePump&lt;/code&gt;函数，该函数负责消息循环，将进入topic中的消息投递到channel中。&lt;/p&gt;
+
+&lt;p&gt;最后，&lt;code&gt;NewTopic&lt;/code&gt;函数执行&lt;code&gt;t.ctx.nsqd.Notify(t)&lt;/code&gt;，该函数在topic和channel创建、停止的时候调用，
+&lt;code&gt;Notify&lt;/code&gt;函数通过执行&lt;code&gt;PersistMetadata&lt;/code&gt;函数，将topic和channel的信息写到文件中。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (n *NSQD) Notify(v interface{}) {
+	// since the in-memory metadata is incomplete,
+	// should not persist metadata while loading it.
+	// nsqd will call `PersistMetadata` it after loading
+	persist := atomic.LoadInt32(&amp;amp;n.isLoading) == 0
+	n.waitGroup.Wrap(func() {
+		// by selecting on exitChan we guarantee that
+		// we do not block exit, see issue #123
+		select {
+		case &amp;lt;-n.exitChan:
+		case n.notifyChan &amp;lt;- v:
+			if !persist {
+				return
+			}
+			n.Lock()
+			err := n.PersistMetadata()
+			if err != nil {
+				n.logf(&amp;quot;ERROR: failed to persist metadata - %s&amp;quot;, err)
+			}
+			n.Unlock()
+		}
+	})
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在&lt;code&gt;Notify&lt;/code&gt;函数的实现时，首先考虑了数据持久化的时机，如果当前nsqd尚在初始化，则不需要立即持久化数据，因为nsqd在初始化后会进行一次统一的持久化工作，&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;Notify&lt;/code&gt;在进行数据持久化的时候采用了异步的方式。使得topic和channel能以同步的方式来调用Nofity而不阻塞。在异步运行的过程中，
+通过&lt;code&gt;waitGroup&lt;/code&gt;和监听&lt;code&gt;exitChan&lt;/code&gt;的使用保证了结束程序时goroutine能正常退出。&lt;/p&gt;
+
+&lt;p&gt;在执行持久化之前，&lt;code&gt;case n.notifyChan &amp;lt;- v:&lt;/code&gt;语句向&lt;code&gt;notifyChan&lt;/code&gt;传递消息，触发&lt;code&gt;lookupLoop&lt;/code&gt;函数（&lt;code&gt;nsqd/lookup.go&lt;/code&gt;中）接收&lt;code&gt;notifyChan&lt;/code&gt;消息的部分，
+从而实现向&lt;code&gt;loopupd&lt;/code&gt;注册/取消注册响应的topic或channel。&lt;/p&gt;
+
+&lt;h1 id=&#34;消息进入topic:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;消息进入topic&lt;/h1&gt;
+
+&lt;p&gt;客户端通过nsqd的HTTP API或TCP API向特定topic发送消息，nsqd的HTTP或TCP模块通过调用对应topic的&lt;code&gt;PutMessage&lt;/code&gt;或&lt;code&gt;PutMessages&lt;/code&gt;函数，
+将消息投递到topic中。&lt;code&gt;PutMessage&lt;/code&gt;或&lt;code&gt;PutMessages&lt;/code&gt;函数都通过topic的私有函数&lt;code&gt;put&lt;/code&gt;进行消息的投递，两个函数的区别仅在&lt;code&gt;PutMessage&lt;/code&gt;只调用一次&lt;code&gt;put&lt;/code&gt;，
+&lt;code&gt;PutMessages&lt;/code&gt;遍历所有要投递的消息，对每条消息使用&lt;code&gt;put&lt;/code&gt;函数进行投递。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) put(m *Message) error {
+	select {
+	case t.memoryMsgChan &amp;lt;- m:
+	default:
+		// ...
+	}
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;带缓冲的go-channel的特性:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;带缓冲的Go channel的特性&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;put&lt;/code&gt;函数使用了一个带缓冲的go channel的特性：如果case里的go channel阻塞了，那么就会跳过该case语句，执行default分支。即，如果当前&lt;code&gt;memoryMsgChan&lt;/code&gt;还有足够缓冲空间，
+则消息被投入&lt;code&gt;memoryMsgChan&lt;/code&gt;，如果当前&lt;code&gt;memoryMsgChan&lt;/code&gt;的缓冲区已满，则将执行default分支，从而将消息保存到&lt;code&gt;backend&lt;/code&gt;中。&lt;/p&gt;
+
+&lt;p&gt;对于临时topic，由于&lt;code&gt;backend&lt;/code&gt;不进行任何操作，这就意味着消息在内存的缓存满了之后会被直接丢弃，对于永久的channel，则&lt;code&gt;backend&lt;/code&gt;会将该消息持久化到磁盘的文件中。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;put&lt;/code&gt;函数使用了Golang的channel特性，大大简化了实现这个逻辑的代码量，以下通过一个简单的示例看看Golang的带缓冲的channel的这一特性，
+示例可以通过&lt;a href=&#34;http://play.golang.org/p/UKc0IUleyU&#34;&gt;The Golang Playground&lt;/a&gt;运行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
+
+import (
+	&amp;quot;fmt&amp;quot;
+	&amp;quot;time&amp;quot;
+)
+
+func main() {
+	workerChan := make(chan string, 3)
+	worker2Chan := make(chan string)
+	exitChan := make(chan bool)
+	
+	go func() {
+		for {
+			select {
+			case str := &amp;lt;- workerChan:
+				fmt.Println(&amp;quot;Worker1 receive &amp;quot;, str)
+				&amp;lt;- time.After(time.Second * 1)
+			case str := &amp;lt;- worker2Chan:
+				fmt.Println(&amp;quot;Worker2 receive &amp;quot;, str)
+			case &amp;lt;- exitChan:
+				return
+			}
+		}	
+	}()
+	go func() {
+		&amp;lt;- time.After(time.Second * 1)
+		workerChan &amp;lt;- &amp;quot;Task 1&amp;quot;
+		workerChan &amp;lt;- &amp;quot;Task 2&amp;quot;
+		workerChan &amp;lt;- &amp;quot;Task 3&amp;quot;
+		select {
+		case workerChan &amp;lt;- &amp;quot;Task 4&amp;quot;:
+		case worker2Chan &amp;lt;- &amp;quot;Task 5&amp;quot;:
+		default:
+			fmt.Println(&amp;quot;Channel queue full&amp;quot;)
+		}
+	}()
+	
+	&amp;lt;- time.After(time.Second * 5)
+	close(exitChan)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;运行结果如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;Channel queue full
+Worker1 receive  Task 1
+Worker1 receive  Task 2
+Worker1 receive  Task 3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;示例程序中有3个go channel，&lt;code&gt;workerChan&lt;/code&gt;和&lt;code&gt;worker2Chan&lt;/code&gt;用于处理消息，&lt;code&gt;exitChan&lt;/code&gt;用于程序的退出。
+当消费者go channel启动后，启动一个生产者go channel向&lt;code&gt;workerChan&lt;/code&gt;连续发送3个消息，
+&lt;code&gt;time.After&lt;/code&gt;模拟了消费者在处理&lt;code&gt;workerChan&lt;/code&gt;的消息时出现的延迟，而&lt;code&gt;workerChan&lt;/code&gt;的缓冲区只有3，
+因此当消费者向&lt;code&gt;workerChan&lt;/code&gt;发送第4个消息的时候会被阻塞，从运行结果看，没有消息被投向&lt;code&gt;worker2Chan&lt;/code&gt;，
+程序在遇到阻塞时进入了default分支，打印出&lt;code&gt;Channel queue full&lt;/code&gt;。特定场景下合理使用这一特性能够大幅减少程序的复杂度。&lt;/p&gt;
+
+&lt;h2 id=&#34;put-函数对消息的持久化:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;put&lt;/code&gt;函数对消息的持久化&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;b := bufferPoolGet()
+err := writeMessageToBackend(b, m, t.backend)
+bufferPoolPut(b)
+t.ctx.nsqd.SetHealth(err)
+if err != nil {
+	t.ctx.nsqd.logf(
+		&amp;quot;TOPIC(%s) ERROR: failed to write message to backend - %s&amp;quot;,
+		t.name, err)
+	return err
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;以上部分来自函数的default分支，用于将消息持久化到磁盘文件中，过程如下：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;通过&lt;code&gt;bufferPoolGet&lt;/code&gt;函数从buffer池中获取一个buffer，&lt;code&gt;bufferPoolGet&lt;/code&gt;及以下&lt;code&gt;bufferPoolPut&lt;/code&gt;函数是对&lt;code&gt;sync.Pool&lt;/code&gt;的简单包装。
+两个函数位于&lt;code&gt;nsqd/buffer_pool.go&lt;/code&gt;中。&lt;/li&gt;
+&lt;li&gt;调用&lt;code&gt;writeMessageToBackend&lt;/code&gt;函数将消息写入磁盘。&lt;/li&gt;
+&lt;li&gt;通过&lt;code&gt;bufferPoolPut&lt;/code&gt;函数将buffer归还buffer池。&lt;/li&gt;
+&lt;li&gt;调用&lt;code&gt;SetHealth&lt;/code&gt;函数将&lt;code&gt;writeMessageToBackend&lt;/code&gt;的返回值写入&lt;code&gt;errValue&lt;/code&gt;变量。
+该变量衍生出&lt;code&gt;IsHealthy&lt;/code&gt;，&lt;code&gt;GetError&lt;/code&gt;和&lt;code&gt;GetHealth&lt;/code&gt;3个函数，主要用于测试以及从HTTP API获取nsqd的运行情况（是否发生错误）&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func writeMessageToBackend(buf *bytes.Buffer, msg *Message, bq BackendQueue) error {
+	buf.Reset()
+	_, err := msg.WriteTo(buf)
+	if err != nil {
+		return err
+	}
+	return bq.Put(buf.Bytes())
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;其中&lt;code&gt;writeMessageToBackend&lt;/code&gt;函数重新初始化缓存，将&lt;code&gt;Message&lt;/code&gt;类型的消息序列化到缓存中，最后将缓存写入&lt;code&gt;backend&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;topic消息循环:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic消息循环&lt;/h1&gt;
+
+&lt;p&gt;&lt;code&gt;messagePump&lt;/code&gt;函数负责Topic的消息循环，该函数在创建新的topic时通过&lt;code&gt;waitGroup&lt;/code&gt;在新的goroutine中运行。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;messagePump&lt;/code&gt;函数初始化时先获取当前存在的channel数组，设置&lt;code&gt;memoryMsgChan&lt;/code&gt;和&lt;code&gt;backendChan&lt;/code&gt;，随后进入消息循环，
+在循环中主要处理四种消息：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;接收来自&lt;code&gt;memoryMsgChan&lt;/code&gt;和&lt;code&gt;backendChan&lt;/code&gt;两个go channel进入的消息，并向当前的channal数组中的channel进行投递&lt;/li&gt;
+&lt;li&gt;处理当前topic下channel的更新&lt;/li&gt;
+&lt;li&gt;处理当前topic的暂停和恢复&lt;/li&gt;
+&lt;li&gt;监听当前topic的删除&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&#34;消息投递:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;消息投递&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case msg = &amp;lt;-memoryMsgChan:
+case buf = &amp;lt;-backendChan:
+	msg, err = decodeMessage(buf)
+	if err != nil {
+		t.ctx.nsqd.logf(&amp;quot;ERROR: failed to decode message - %s&amp;quot;, err)
+		continue
+	}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这两个case语句处理进入topic的消息，关于两个go channel的区别会在后续的博客中分析。
+从&lt;code&gt;memoryMsgChanbackendChan&lt;/code&gt;读取到的消息是&lt;code&gt;*Message&lt;/code&gt;类型，而从&lt;code&gt;backendChan&lt;/code&gt;读取到的消息是&lt;code&gt;byte&lt;/code&gt;数组的。
+因此取出&lt;code&gt;backendChan&lt;/code&gt;的消息后海需要调用&lt;code&gt;decodeMessage&lt;/code&gt;函数对&lt;code&gt;byte&lt;/code&gt;数组进行解码，返回&lt;code&gt;*Message&lt;/code&gt;类型的消息。
+二者都保存在&lt;code&gt;msg&lt;/code&gt;变量中。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;for i, channel := range chans {
+	chanMsg := msg
+	// copy the message because each channel
+	// needs a unique instance but...
+	// fastpath to avoid copy if its the first channel
+	// (the topic already created the first copy)
+	if i &amp;gt; 0 {
+		chanMsg = NewMessage(msg.ID, msg.Body)
+		chanMsg.Timestamp = msg.Timestamp
+		chanMsg.deferred = msg.deferred
+	}
+	if chanMsg.deferred != 0 {
+		channel.StartDeferredTimeout(chanMsg, chanMsg.deferred)
+		continue
+	}
+	err := channel.PutMessage(chanMsg)
+	if err != nil {
+		t.ctx.nsqd.logf(
+			&amp;quot;TOPIC(%s) ERROR: failed to put msg(%s) to channel(%s) - %s&amp;quot;,
+			t.name, msg.ID, channel.name, err)
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;随后是将消息投到每个channel中，首先先对消息进行复制操作，这里有个优化，对于第一次循环，
+直接使用原消息进行发送以减少复制对象的开销，此后的循环将对消息进行复制。对于即时的消息，
+直接调用channel的&lt;code&gt;PutMessage&lt;/code&gt;函数进行投递，对于延迟的消息，
+调用channel的&lt;code&gt;StartDeferredTimeout&lt;/code&gt;函数进行投递。对于这两个函数的投递细节，后续博文中会详细分析。&lt;/p&gt;
+
+&lt;h2 id=&#34;topic下channel的更新:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic下Channel的更新&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case &amp;lt;-t.channelUpdateChan:
+	chans = chans[:0]
+	t.RLock()
+	for _, c := range t.channelMap {
+		chans = append(chans, c)
+	}
+	t.RUnlock()
+	if len(chans) == 0 || t.IsPaused() {
+		memoryMsgChan = nil
+		backendChan = nil
+	} else {
+		memoryMsgChan = t.memoryMsgChan
+		backendChan = t.backend.ReadChan()
+	}
+	continue
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Channel的更新比较简单，从&lt;code&gt;channelMap&lt;/code&gt;中取出每个channel，构成channel的数组以便后续进行消息的投递。
+并且根据当前是否有channel以及该topic是否处于暂停状态来决定&lt;code&gt;memoryMsgChan&lt;/code&gt;和&lt;code&gt;backendChan&lt;/code&gt;是否为空。&lt;/p&gt;
+
+&lt;h2 id=&#34;topic的暂停和恢复:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的暂停和恢复&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case pause := &amp;lt;-t.pauseChan:
+	if pause || len(chans) == 0 {
+		memoryMsgChan = nil
+		backendChan = nil
+	} else {
+		memoryMsgChan = t.memoryMsgChan
+		backendChan = t.backend.ReadChan()
+	}
+	continue
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个case既处理topic的暂停也处理topic的恢复，&lt;code&gt;pause&lt;/code&gt;变量决定其究竟是哪一种操作。
+Topic的暂停和恢复其实和topic的更新很像，根据是否暂停以及是否有channel来决定是否分配&lt;code&gt;memoryMsgChan&lt;/code&gt;和&lt;code&gt;backendChan&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h2 id=&#34;messagepump-函数的退出:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;messagePump&lt;/code&gt;函数的退出&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case &amp;lt;-t.exitChan:
+	goto exit
+
+// ...
+exit:
+	t.ctx.nsqd.logf(&amp;quot;TOPIC(%s): closing ... messagePump&amp;quot;, t.name)
+}
+// End of messagePump
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;messagePump&lt;/code&gt;通过监听&lt;code&gt;exitChan&lt;/code&gt;来获知topic是否被删除，当topic的删除时，跳转到函数的最后，输出日志后退出消息循环。&lt;/p&gt;
+
+&lt;h1 id=&#34;topic的关闭和删除:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的关闭和删除&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// Delete empties the topic and all its channels and closes
+func (t *Topic) Delete() error {
+	return t.exit(true)
+}
+
+// Close persists all outstanding topic data and closes all its channels
+func (t *Topic) Close() error {
+	return t.exit(false)
+}
+
+func (t *Topic) exit(deleted bool) error {
+	if !atomic.CompareAndSwapInt32(&amp;amp;t.exitFlag, 0, 1) {
+		return errors.New(&amp;quot;exiting&amp;quot;)
+	}
+
+	if deleted {
+		t.ctx.nsqd.logf(&amp;quot;TOPIC(%s): deleting&amp;quot;, t.name)
+
+		// since we are explicitly deleting a topic (not just at system exit time)
+		// de-register this from the lookupd
+		t.ctx.nsqd.Notify(t)
+	} else {
+		t.ctx.nsqd.logf(&amp;quot;TOPIC(%s): closing&amp;quot;, t.name)
+	}
+
+	close(t.exitChan)
+
+	// synchronize the close of messagePump()
+	t.waitGroup.Wait()
+
+	if deleted {
+		t.Lock()
+		for _, channel := range t.channelMap {
+			delete(t.channelMap, channel.name)
+			channel.Delete()
+		}
+		t.Unlock()
+
+		// empty the queue (deletes the backend files, too)
+		t.Empty()
+		return t.backend.Delete()
+	}
+
+	// close all the channels
+	for _, channel := range t.channelMap {
+		err := channel.Close()
+		if err != nil {
+			// we need to continue regardless of error to close all the channels
+			t.ctx.nsqd.logf(&amp;quot;ERROR: channel(%s) close - %s&amp;quot;, channel.name, err)
+		}
+	}
+
+	// write anything leftover to disk
+	t.flush()
+	return t.backend.Close()
+}
+// Exiting returns a boolean indicating if this topic is closed/exiting
+func (t *Topic) Exiting() bool {
+	return atomic.LoadInt32(&amp;amp;t.exitFlag) == 1
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Topic关闭和删除的实现都是调用&lt;code&gt;exit&lt;/code&gt;函数，只是传递的参数不同，删除时调用&lt;code&gt;exit(true)&lt;/code&gt;，关闭时调用&lt;code&gt;exit(false)&lt;/code&gt;。
+&lt;code&gt;exit&lt;/code&gt;函数进入时通过&lt;code&gt;atomic.CompareAndSwapInt32&lt;/code&gt;函数判断当前是否正在退出，如果不是，则设置退出标记，对于已经在退出的topic，不再重复执行退出函数。
+接着对于关闭操作，使用&lt;code&gt;Notify&lt;/code&gt;函数通知lookupd以便其他nsqd获知该消息。&lt;/p&gt;
+
+&lt;p&gt;随后，&lt;code&gt;exit&lt;/code&gt;函数调用&lt;code&gt;close(t.exitChan)&lt;/code&gt;和&lt;code&gt;t.waitGroup.Wait()&lt;/code&gt;通知其他正在运行goroutine当前topic已经停止，并等待&lt;code&gt;waitGroup&lt;/code&gt;中的goroutine结束运行。&lt;/p&gt;
+
+&lt;p&gt;最后，对于删除和关闭两种操作，执行不同的逻辑来完成最后的清理工作：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;对于删除操作，需要清空&lt;code&gt;channelMap&lt;/code&gt;并删除所有channel，然后删除内存和磁盘中所有未投递的消息。最后关闭&lt;code&gt;backend&lt;/code&gt;管理的的磁盘文件。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;对于关闭操作，不清空&lt;code&gt;channelMap&lt;/code&gt;，只是关闭所有的channel，使用&lt;code&gt;flush&lt;/code&gt;函数将所有&lt;code&gt;memoryMsgChan&lt;/code&gt;中未投递的消息用&lt;code&gt;writeMessageToBackend&lt;/code&gt;保存到磁盘中。最后关闭&lt;code&gt;backend&lt;/code&gt;管理的的磁盘文件。&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) flush() error {
+	//...
+	for {
+		select {
+		case msg := &amp;lt;-t.memoryMsgChan:
+			err := writeMessageToBackend(&amp;amp;msgBuf, msg, t.backend)
+			if err != nil {
+				t.ctx.nsqd.logf(
+					&amp;quot;ERROR: failed to write message to backend - %s&amp;quot;, err)
+			}
+		default:
+			goto finish
+		}
+	}
+	
+finish:
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;flush&lt;/code&gt;函数也使用到了default分支来检测是否已经处理完全部消息。
+由于此时已经没有生产者向&lt;code&gt;memoryMsgChan&lt;/code&gt;提供消息，因此如果出现阻塞就表示消息已经处理完毕。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) Empty() error {
+	for {
+		select {
+		case &amp;lt;-t.memoryMsgChan:
+		default:
+			goto finish
+		}
+	}
+
+finish:
+	return t.backend.Empty()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在删除topic时用到的&lt;code&gt;Empty&lt;/code&gt;函数跟&lt;code&gt;flush&lt;/code&gt;处理逻辑类似，只不过&lt;code&gt;Empty&lt;/code&gt;只释放&lt;code&gt;memoryMsgChan&lt;/code&gt;消息，而不保存它们。&lt;/p&gt;
+
+&lt;h1 id=&#34;其他函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;其他函数&lt;/h1&gt;
+
+&lt;h2 id=&#34;depth-函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;Depth&lt;/code&gt;函数&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) Depth() int64 {
+	return int64(len(t.memoryMsgChan)) + t.backend.Depth()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;Depth&lt;/code&gt;函数用于获取当前topic尚未投递的消息数，是&lt;code&gt;memoryMsgChan&lt;/code&gt;缓冲区的长度加上&lt;code&gt;backend&lt;/code&gt;里消息的个数。&lt;/p&gt;
+
+&lt;h2 id=&#34;pause-和-unpause-函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;Pause&lt;/code&gt;和&lt;code&gt;UnPause&lt;/code&gt;函数&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) Pause() error {
+	return t.doPause(true)
+}
+
+func (t *Topic) UnPause() error {
+	return t.doPause(false)
+}
+
+func (t *Topic) doPause(pause bool) error {
+	if pause {
+		atomic.StoreInt32(&amp;amp;t.paused, 1)
+	} else {
+		atomic.StoreInt32(&amp;amp;t.paused, 0)
+	}
+
+	select {
+	case t.pauseChan &amp;lt;- pause:
+	case &amp;lt;-t.exitChan:
+	}
+
+	return nil
+}
+
+func (t *Topic) IsPaused() bool {
+	return atomic.LoadInt32(&amp;amp;t.paused) == 1
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;对于很多相似的处理逻辑，nsqd在对外使用不同的函数，但在内部实现上通常把它们合并为一个函数来处理，只是传递的参数不同而已，
+比如前面提到的&lt;code&gt;Close&lt;/code&gt;和&lt;code&gt;Delete&lt;/code&gt;。&lt;code&gt;Pause&lt;/code&gt;和&lt;code&gt;UnPause&lt;/code&gt;同样也使用这种方式，通过传递不同的参数调用&lt;code&gt;doPause&lt;/code&gt;函数来执行不同操作。
+&lt;code&gt;doPause&lt;/code&gt;设置&lt;code&gt;paused&lt;/code&gt;标志并向&lt;code&gt;pauseChan&lt;/code&gt;发送消息，随后由&lt;code&gt;messagePump&lt;/code&gt;在消息循环中暂停topic。&lt;/p&gt;
+
+&lt;h2 id=&#34;aggregatechannele2eprocessinglatency-函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;AggregateChannelE2eProcessingLatency&lt;/code&gt;函数&lt;/h2&gt;
+
+&lt;p&gt;此函数用于性能统计，在&lt;code&gt;nsqd/statd.go&lt;/code&gt;中调用，客户端可以通过HTTP的/stats API看到统计结果。具体细节将在后续博文分析。&lt;/p&gt;
+
+&lt;h2 id=&#34;与channel相关的函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;与channel相关的函数&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;GetChannel&lt;/code&gt;, &lt;code&gt;getOrCreateChannel&lt;/code&gt;，&lt;code&gt;GetExistingChannel&lt;/code&gt;, &lt;code&gt;DeleteExistingChannel&lt;/code&gt;这些函数是与channel相关的函数，将在后续的博文中分析。&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化</title>

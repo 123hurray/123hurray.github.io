@@ -1,0 +1,1080 @@
+
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+  <title>nsq源码阅读笔记之nsqd（二）——Topic</title>
+  <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
+  <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-toolbar/paper-toolbar.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-item/paper-item.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-menu/paper-menu.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-button/paper-button.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-card/paper-card.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-image/iron-image.html">
+  <link rel="stylesheet" href="http://blog.123hurray.tk/css/highlightjs-theme-github.css">
+  <style is="custom-style">
+    paper-item /deep/ .content {
+		width: 100%;
+	}
+    /deep/ ::-webkit-scrollbar-track {
+      background:transparent;
+    }
+
+    /deep/ ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    /deep/ ::-webkit-scrollbar-thumb {
+      background-color: var(--paper-light-blue-500);
+    }
+  
+  paper-card .summary {
+	clear:both;
+  }
+  .title .main {
+	float:left;
+	font-size: 20px;
+	margin-bottom:10px;
+	margin-right: 15px;
+  }
+  .title paper-button {
+	min-width: 0px;
+   }
+   paper-button.green {
+      color: var(--paper-green-500);
+      --paper-button-flat-focus-color: var(--paper-green-50);
+    }
+    paper-button.green:hover {
+      background: var(--paper-green-50);
+    }
+   .article .categories {
+	float:right;
+	margin-right: 10px;
+   }
+   .categories iron-icon, .tags iron-icon{
+	--iron-icon-height: 16px;
+    --iron-icon-width: 16px;
+  }
+  .categories,.tags {
+  
+	font-size:14px;
+  }
+  .title paper-button /deep/ paper-material{
+	padding: 0px;
+	font-size:14px;
+  }
+  paper-button.blue {
+      color: var(--paper-light-blue-500);
+      --paper-button-flat-focus-color: var(--paper-light-blue-50);
+    }
+	
+    paper-button.blue:hover {
+      background: var(--paper-light-blue-50);
+    }
+  a {
+	  color: inherit;
+	  text-decoration: none;
+	}
+	.article a {
+	  color: var(--paper-light-blue-500);
+	  text-decoration: underline;
+	}
+	.main.single {
+	  width:100%;
+	  font-size:30px;
+	  line-height:45px;
+	  margin: 30px 10px;
+	}
+   #articles {
+      @apply(--layout-vertical);
+      @apply(--center-justified);
+      margin-left: auto;
+      margin-right: auto;
+	  margin-top: 20px;
+    }
+	.tags /deep/ paper-material {
+		padding: 0px;
+	}
+	 paper-card {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .nav {
+      border-right: 1px solid #ccc;
+    }
+    
+    paper-scroll-header-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: var(--paper-grey-200, #eee);
+       
+      --paper-scroll-header-panel-full-header: {
+        background-image: url(http://blog.123hurray.tk/images/cover.png);
+      };
+       
+      --paper-scroll-header-panel-condensed-header: {
+        background-image: url(http://blog.123hurray.tk/images/cover.png);
+      };
+    }
+    
+    paper-toolbar {
+       
+      height: 256px;
+      background-color: transparent;
+    }
+    .profile{
+      width: 100%;
+      padding-bottom: 20px;
+    }
+    .photo{
+      margin: 20px;
+      display: inline-block;
+      height: 64px; width: 64px;
+      border-radius: 50%;
+    }
+    .article{
+      border: 1px solid #bebebe;
+      padding: 16px;
+      margin: 16px;
+      border-radius: 5px;
+      background-color: #fafafa;
+    }
+	.toolbar-tools.paper-toolbar .title.bottom {
+		font-size: 40px;
+	}
+    .title.bottom.title{
+      padding: 8px 0 16px;
+    }
+    .article-body{
+      font-size: 16px;
+      padding-bottom: 8px;
+    }
+    .author{
+      font-size: 16px;
+      padding-left: 20px;
+      color: white;
+    }
+    .design{
+      font-size: 14px;
+    }
+    .copyright{
+      font-size: 16px;
+    }
+    paper-menu a {
+      text-decoration: none;
+      color: #212121;
+    }
+	.toolbar-tools.paper-toolbar .title {
+		pointer-events: initial;
+	}
+	  </style>
+	<link rel="stylesheet" href="http://blog.123hurray.tk/css/markdown.css">
+</head>
+<body>
+  <paper-drawer-panel id="drawerPanel" responsive-width="1280px">
+    <div class="nav scroll" drawer>
+    
+      <iron-image class="profile" sizing="cover" src="http://blog.123hurray.tk/images/profile.png">
+    
+        
+          <iron-image class="photo" sizing="cover" src="http://blog.123hurray.tk/images/photo.png"></iron-image>
+        
+          <div class="author">RayXXZhang</div>
+      </iron-image>
+      <paper-menu>
+        <a href="http://blog.123hurray.tk/index.html"><paper-item>
+          <iron-icon icon="home"></iron-icon>　<div class="flex">主页</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://blog.123hurray.tk/categories/"><paper-item>
+          <iron-icon icon="drafts"></iron-icon>　<div class="flex">分类</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://blog.123hurray.tk/tags/"><paper-item>
+          <iron-icon icon="loyalty"></iron-icon>　<div class="flex">标签</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+      </paper-menu>
+    </div>
+
+    <paper-scroll-header-panel main condenses header-height="256" condensed-header-height="64">
+	
+      <paper-toolbar>
+
+        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+		<div class="bottom title"><a href="http://blog.123hurray.tk/index.html">RayXXZhang的博客</a></div>
+        
+        <div class="flex"></div>
+		
+			
+				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/weibo.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://github.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/github.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/facebook.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://blog.123hurray.tk/images/twitter.png"></paper-icon-button></a>
+			
+		
+		<a href="http://blog.123hurray.tk/index.xml"><paper-icon-button src="http://blog.123hurray.tk/images/feed.png"></paper-icon-button></a>
+      
+      </paper-toolbar>
+
+
+<paper-item>
+<div class="content">
+
+  <div class="article">
+    <div class="title"><div class="main single">nsq源码阅读笔记之nsqd（二）——Topic
+    
+      
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://blog.123hurray.tk/categories/nsq%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>nsq源码解析</paper-button></a>
+	
+	  <a href="http://blog.123hurray.tk/categories/golang/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Golang</paper-button></a>
+	
+</div>
+ 
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body">
+
+<p>与<strong>Topic</strong>相关的代码主要位于<code>nsqd/nsqd.go</code>, <code>nsqd/topic.go</code>中。</p>
+
+<h1 id="topic的获取:bcb97463d8dd6c9afc36421d8c54864f">Topic的获取</h1>
+
+<p>Topic通过<code>GetTopic</code>函数获取</p>
+
+<pre><code class="language-go">// GetTopic performs a thread safe operation
+// to return a pointer to a Topic object (potentially new)
+func (n *NSQD) GetTopic(topicName string) *Topic {
+	n.Lock()
+
+	t, ok := n.topicMap[topicName]
+	if ok {
+		n.Unlock()
+		return t
+	}
+	deleteCallback := func(t *Topic) {
+		n.DeleteExistingTopic(t.name)
+	}
+	t = NewTopic(topicName, &amp;context{n}, deleteCallback)
+	n.topicMap[topicName] = t
+
+	n.logf(&quot;TOPIC(%s): created&quot;, t.name)
+
+	// release our global nsqd lock, and switch to a more granular topic lock while we init our
+	// channels from lookupd. This blocks concurrent PutMessages to this topic.
+	t.Lock()
+	n.Unlock()
+
+	// if using lookupd, make a blocking call to get the topics, and immediately create them.
+	// this makes sure that any message received is buffered to the right channels
+	lookupdHTTPAddrs := n.lookupdHTTPAddrs()
+	if len(lookupdHTTPAddrs) &gt; 0 {
+		channelNames, _ := n.ci.GetLookupdTopicChannels(t.name, lookupdHTTPAddrs)
+		for _, channelName := range channelNames {
+			if strings.HasSuffix(channelName, &quot;#ephemeral&quot;) {
+				// we don't want to pre-create ephemeral channels
+				// because there isn't a client connected
+				continue
+			}
+			t.getOrCreateChannel(channelName)
+		}
+	}
+
+	t.Unlock()
+
+	// NOTE: I would prefer for this to only happen in topic.GetChannel() but we're special
+	// casing the code above so that we can control the locks such that it is impossible
+	// for a message to be written to a (new) topic while we're looking up channels
+	// from lookupd...
+	//
+	// update messagePump state
+	select {
+	case t.channelUpdateChan &lt;- 1:
+	case &lt;-t.exitChan:
+	}
+	return t
+}
+</code></pre>
+
+<p><code>GetTopic</code>函数用于获取topic对象，首先先尝试从<code>topicMap</code>表中获取，如果指定的topic存在，则直接返回topic对象。</p>
+
+<p>当topic不存在时需要新建一个topic，加入到<code>topicMap</code>中，
+如果启用了nsqlookupd则需要从<code>lookupd</code>中获取该topic的所有channel，在去除<code>#ephemeral</code>结尾的临时channel后加入到topic中。</p>
+
+<p>其中锁的使用值得学习：在调用完nsqd的变量后转而进行topic操作，这时候程序转而使用topic的小粒度的锁，释放了nsqd全局的大粒度锁，
+在保证线程安全的同时减少了效率上的损失。</p>
+
+<p>在创建新的topic后需要向<code>channelUpdateChan</code>发送消息来更新topic中的channel，而<code>channelUpdateChan</code>是一个阻塞的go channel,
+所以此处使用了<code>select</code>，并同时监听了<code>exitChan</code>。如果此时<code>exitChan</code>收到信号则可以正常退出<code>select</code>。
+如果没有<code>case &lt;-t.exitChan</code>这句话，
+则可能接收<code>channelUpdateChan</code>的go channel已经退出，但是发送端却还在阻塞中。当然，可以通过退出主go channel来结束程序，
+但这样做可能造成部分析构的代码没有得到执行，而且在部分场景下，
+只是程序的一个go channel结束运行（在nsqd的这个例子中是topic被删除）而非整个程序退出。
+为了避免这个问题，nsqd许多向go channal发送消息的地方都使用了这种机制。</p>
+
+<p>以下是这种机制的一个示例，
+可以通过<a href="http://play.golang.org/p/xLaZcgjypS">The Go Playground</a>来运行:</p>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;fmt&quot;
+	&quot;time&quot;
+)
+
+func main() {
+	workerChan := make(chan string)
+	exitChan := make(chan int)
+	go func() {
+		&lt;-time.After(time.Second * 1)
+		select {
+		case workerChan &lt;- &quot;Task 1&quot;:
+		}
+		fmt.Println(&quot;Task 1 exit&quot;)
+	}()
+	go func() {
+		select {
+		case workerChan &lt;- &quot;Task 2&quot;:
+		case &lt;- exitChan:
+		}
+		fmt.Println(&quot;Task 2 exit&quot;)
+	}()
+	
+	go func() {
+		select {
+		case &lt;-time.After(time.Second * 2):
+		}
+		fmt.Println(&quot;Close exitChan&quot;)
+		close(exitChan)
+		&lt;-time.After(time.Second * 4)
+		close(workerChan)
+	}()
+	
+	&lt;- time.After(time.Second * 3)
+	fmt.Println(&quot;Start receive from workerChan&quot;)
+	loop:
+	for {
+		select {
+		case i, ok := &lt;-workerChan:
+			if ok {
+				fmt.Println(&quot;Receive:&quot;, i)
+			} else {
+				break loop
+			}
+		
+		}
+	}
+		
+	
+	&lt;- time.After(time.Second * 1)
+}
+</code></pre>
+
+<p>运行程序，得到以下运行结果：</p>
+
+<pre><code class="language-shell">Close exitChan
+Task 2 exit
+Start receive from workerChan
+Receive: Task 1
+Task 1 exit
+</code></pre>
+
+<p>Task1和Task2是两个生产者，它们都向workerChan发送消息，其中Task2立即发送，Task1有一定延时，workerChan是一个阻塞的go channel。
+同时，有一个go channel发送结束信号（关闭exitChan）。随后开启消费者，接收workerChan的消息，
+Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。</p>
+
+<p>从结果可以看出，当exitChan被关闭时，Task2结束对workerChan的阻塞，取消了像worker发送信号，同时结束了自身。
+而没有监听exitChan的Task1依然在阻塞，直到被读取后才退出。</p>
+
+<p>示例说明了可以通过对exitChan的使用来结束对阻塞go channel的等待。需要说明的是，在真实场景中，
+消费者在发出结束的意图后可能并不会去处理尚未被处理的消息，所以像示例中的Task1是无法正常结束的。</p>
+
+<h1 id="topic的创建:bcb97463d8dd6c9afc36421d8c54864f">Topic的创建</h1>
+
+<p>当<code>GetTopic</code>未在已存在的topic中找到指定topic时，就会使用<code>NewTopic</code>函数新建一个<code>Topic</code>对象。
+<code>Topic</code>和<code>NewTopic</code>都位于<code>nsqd/topic.go</code>中。</p>
+
+<pre><code class="language-go">func NewTopic(topicName string, ctx *context, deleteCallback func(*Topic)) *Topic {
+	t := &amp;Topic{
+		name:              topicName,
+		channelMap:        make(map[string]*Channel),
+		memoryMsgChan:     make(chan *Message, ctx.nsqd.getOpts().MemQueueSize),
+		exitChan:          make(chan int),
+		channelUpdateChan: make(chan int),
+		ctx:               ctx,
+		pauseChan:         make(chan bool),
+		deleteCallback:    deleteCallback,
+	}
+
+	if strings.HasSuffix(topicName, &quot;#ephemeral&quot;) {
+		t.ephemeral = true
+		t.backend = newDummyBackendQueue()
+	} else {
+		t.backend = newDiskQueue(topicName,
+			ctx.nsqd.getOpts().DataPath,
+			ctx.nsqd.getOpts().MaxBytesPerFile,
+			int32(minValidMsgLength),
+			int32(ctx.nsqd.getOpts().MaxMsgSize)+minValidMsgLength,
+			ctx.nsqd.getOpts().SyncEvery,
+			ctx.nsqd.getOpts().SyncTimeout,
+			ctx.nsqd.getOpts().Logger)
+	}
+
+	t.waitGroup.Wrap(func() { t.messagePump() })
+
+	t.ctx.nsqd.Notify(t)
+
+	return t
+}
+</code></pre>
+
+<p><code>NewTopic</code>函数首先创建了一个<code>Topic</code>结构，然后判断该topic是不是一个临时topic。topic中有个名为<code>backend</code>的变量，
+其类型为<code>Backend</code>接口。对于临时topic，
+消息只储存在内存中，因此<code>backend</code>变量使用<code>newDummyBackendQueue</code>函数初始化。该函数生成一个无任何功能的<code>dummyBackendQueue</code>结构；
+对于永久的topic，<code>backend</code>使用<code>newDiskQueue</code>函数返回<code>diskQueue</code>类型赋值，并开启新的goroutine来进行数据的持久化。
+<code>dummyBackendQueue</code>和<code>diskQueue</code>都实现了<code>Backend</code>接口，因此，在之后可以使用<code>backend</code>统一处理。</p>
+
+<p>随后，<code>NewTopic</code>函数开启一个新的goroutine来执行<code>messagePump</code>函数，该函数负责消息循环，将进入topic中的消息投递到channel中。</p>
+
+<p>最后，<code>NewTopic</code>函数执行<code>t.ctx.nsqd.Notify(t)</code>，该函数在topic和channel创建、停止的时候调用，
+<code>Notify</code>函数通过执行<code>PersistMetadata</code>函数，将topic和channel的信息写到文件中。</p>
+
+<pre><code class="language-go">func (n *NSQD) Notify(v interface{}) {
+	// since the in-memory metadata is incomplete,
+	// should not persist metadata while loading it.
+	// nsqd will call `PersistMetadata` it after loading
+	persist := atomic.LoadInt32(&amp;n.isLoading) == 0
+	n.waitGroup.Wrap(func() {
+		// by selecting on exitChan we guarantee that
+		// we do not block exit, see issue #123
+		select {
+		case &lt;-n.exitChan:
+		case n.notifyChan &lt;- v:
+			if !persist {
+				return
+			}
+			n.Lock()
+			err := n.PersistMetadata()
+			if err != nil {
+				n.logf(&quot;ERROR: failed to persist metadata - %s&quot;, err)
+			}
+			n.Unlock()
+		}
+	})
+}
+</code></pre>
+
+<p>在<code>Notify</code>函数的实现时，首先考虑了数据持久化的时机，如果当前nsqd尚在初始化，则不需要立即持久化数据，因为nsqd在初始化后会进行一次统一的持久化工作，</p>
+
+<p><code>Notify</code>在进行数据持久化的时候采用了异步的方式。使得topic和channel能以同步的方式来调用Nofity而不阻塞。在异步运行的过程中，
+通过<code>waitGroup</code>和监听<code>exitChan</code>的使用保证了结束程序时goroutine能正常退出。</p>
+
+<p>在执行持久化之前，<code>case n.notifyChan &lt;- v:</code>语句向<code>notifyChan</code>传递消息，触发<code>lookupLoop</code>函数（<code>nsqd/lookup.go</code>中）接收<code>notifyChan</code>消息的部分，
+从而实现向<code>loopupd</code>注册/取消注册响应的topic或channel。</p>
+
+<h1 id="消息进入topic:bcb97463d8dd6c9afc36421d8c54864f">消息进入topic</h1>
+
+<p>客户端通过nsqd的HTTP API或TCP API向特定topic发送消息，nsqd的HTTP或TCP模块通过调用对应topic的<code>PutMessage</code>或<code>PutMessages</code>函数，
+将消息投递到topic中。<code>PutMessage</code>或<code>PutMessages</code>函数都通过topic的私有函数<code>put</code>进行消息的投递，两个函数的区别仅在<code>PutMessage</code>只调用一次<code>put</code>，
+<code>PutMessages</code>遍历所有要投递的消息，对每条消息使用<code>put</code>函数进行投递。</p>
+
+<pre><code class="language-go">func (t *Topic) put(m *Message) error {
+	select {
+	case t.memoryMsgChan &lt;- m:
+	default:
+		// ...
+	}
+	return nil
+}
+</code></pre>
+
+<h2 id="带缓冲的go-channel的特性:bcb97463d8dd6c9afc36421d8c54864f">带缓冲的Go channel的特性</h2>
+
+<p><code>put</code>函数使用了一个带缓冲的go channel的特性：如果case里的go channel阻塞了，那么就会跳过该case语句，执行default分支。即，如果当前<code>memoryMsgChan</code>还有足够缓冲空间，
+则消息被投入<code>memoryMsgChan</code>，如果当前<code>memoryMsgChan</code>的缓冲区已满，则将执行default分支，从而将消息保存到<code>backend</code>中。</p>
+
+<p>对于临时topic，由于<code>backend</code>不进行任何操作，这就意味着消息在内存的缓存满了之后会被直接丢弃，对于永久的channel，则<code>backend</code>会将该消息持久化到磁盘的文件中。</p>
+
+<p><code>put</code>函数使用了Golang的channel特性，大大简化了实现这个逻辑的代码量，以下通过一个简单的示例看看Golang的带缓冲的channel的这一特性，
+示例可以通过<a href="http://play.golang.org/p/UKc0IUleyU">The Golang Playground</a>运行：</p>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;fmt&quot;
+	&quot;time&quot;
+)
+
+func main() {
+	workerChan := make(chan string, 3)
+	worker2Chan := make(chan string)
+	exitChan := make(chan bool)
+	
+	go func() {
+		for {
+			select {
+			case str := &lt;- workerChan:
+				fmt.Println(&quot;Worker1 receive &quot;, str)
+				&lt;- time.After(time.Second * 1)
+			case str := &lt;- worker2Chan:
+				fmt.Println(&quot;Worker2 receive &quot;, str)
+			case &lt;- exitChan:
+				return
+			}
+		}	
+	}()
+	go func() {
+		&lt;- time.After(time.Second * 1)
+		workerChan &lt;- &quot;Task 1&quot;
+		workerChan &lt;- &quot;Task 2&quot;
+		workerChan &lt;- &quot;Task 3&quot;
+		select {
+		case workerChan &lt;- &quot;Task 4&quot;:
+		case worker2Chan &lt;- &quot;Task 5&quot;:
+		default:
+			fmt.Println(&quot;Channel queue full&quot;)
+		}
+	}()
+	
+	&lt;- time.After(time.Second * 5)
+	close(exitChan)
+}
+</code></pre>
+
+<p>运行结果如下：</p>
+
+<pre><code class="language-shell">Channel queue full
+Worker1 receive  Task 1
+Worker1 receive  Task 2
+Worker1 receive  Task 3
+</code></pre>
+
+<p>示例程序中有3个go channel，<code>workerChan</code>和<code>worker2Chan</code>用于处理消息，<code>exitChan</code>用于程序的退出。
+当消费者go channel启动后，启动一个生产者go channel向<code>workerChan</code>连续发送3个消息，
+<code>time.After</code>模拟了消费者在处理<code>workerChan</code>的消息时出现的延迟，而<code>workerChan</code>的缓冲区只有3，
+因此当消费者向<code>workerChan</code>发送第4个消息的时候会被阻塞，从运行结果看，没有消息被投向<code>worker2Chan</code>，
+程序在遇到阻塞时进入了default分支，打印出<code>Channel queue full</code>。特定场景下合理使用这一特性能够大幅减少程序的复杂度。</p>
+
+<h2 id="put-函数对消息的持久化:bcb97463d8dd6c9afc36421d8c54864f"><code>put</code>函数对消息的持久化</h2>
+
+<pre><code class="language-go">b := bufferPoolGet()
+err := writeMessageToBackend(b, m, t.backend)
+bufferPoolPut(b)
+t.ctx.nsqd.SetHealth(err)
+if err != nil {
+	t.ctx.nsqd.logf(
+		&quot;TOPIC(%s) ERROR: failed to write message to backend - %s&quot;,
+		t.name, err)
+	return err
+}
+</code></pre>
+
+<p>以上部分来自函数的default分支，用于将消息持久化到磁盘文件中，过程如下：</p>
+
+<ol>
+<li>通过<code>bufferPoolGet</code>函数从buffer池中获取一个buffer，<code>bufferPoolGet</code>及以下<code>bufferPoolPut</code>函数是对<code>sync.Pool</code>的简单包装。
+两个函数位于<code>nsqd/buffer_pool.go</code>中。</li>
+<li>调用<code>writeMessageToBackend</code>函数将消息写入磁盘。</li>
+<li>通过<code>bufferPoolPut</code>函数将buffer归还buffer池。</li>
+<li>调用<code>SetHealth</code>函数将<code>writeMessageToBackend</code>的返回值写入<code>errValue</code>变量。
+该变量衍生出<code>IsHealthy</code>，<code>GetError</code>和<code>GetHealth</code>3个函数，主要用于测试以及从HTTP API获取nsqd的运行情况（是否发生错误）</li>
+</ol>
+
+<pre><code class="language-go">func writeMessageToBackend(buf *bytes.Buffer, msg *Message, bq BackendQueue) error {
+	buf.Reset()
+	_, err := msg.WriteTo(buf)
+	if err != nil {
+		return err
+	}
+	return bq.Put(buf.Bytes())
+}
+</code></pre>
+
+<p>其中<code>writeMessageToBackend</code>函数重新初始化缓存，将<code>Message</code>类型的消息序列化到缓存中，最后将缓存写入<code>backend</code></p>
+
+<h1 id="topic消息循环:bcb97463d8dd6c9afc36421d8c54864f">Topic消息循环</h1>
+
+<p><code>messagePump</code>函数负责Topic的消息循环，该函数在创建新的topic时通过<code>waitGroup</code>在新的goroutine中运行。</p>
+
+<p><code>messagePump</code>函数初始化时先获取当前存在的channel数组，设置<code>memoryMsgChan</code>和<code>backendChan</code>，随后进入消息循环，
+在循环中主要处理四种消息：</p>
+
+<ol>
+<li>接收来自<code>memoryMsgChan</code>和<code>backendChan</code>两个go channel进入的消息，并向当前的channal数组中的channel进行投递</li>
+<li>处理当前topic下channel的更新</li>
+<li>处理当前topic的暂停和恢复</li>
+<li>监听当前topic的删除</li>
+</ol>
+
+<h2 id="消息投递:bcb97463d8dd6c9afc36421d8c54864f">消息投递</h2>
+
+<pre><code class="language-go">case msg = &lt;-memoryMsgChan:
+case buf = &lt;-backendChan:
+	msg, err = decodeMessage(buf)
+	if err != nil {
+		t.ctx.nsqd.logf(&quot;ERROR: failed to decode message - %s&quot;, err)
+		continue
+	}
+</code></pre>
+
+<p>这两个case语句处理进入topic的消息，关于两个go channel的区别会在后续的博客中分析。
+从<code>memoryMsgChanbackendChan</code>读取到的消息是<code>*Message</code>类型，而从<code>backendChan</code>读取到的消息是<code>byte</code>数组的。
+因此取出<code>backendChan</code>的消息后海需要调用<code>decodeMessage</code>函数对<code>byte</code>数组进行解码，返回<code>*Message</code>类型的消息。
+二者都保存在<code>msg</code>变量中。</p>
+
+<pre><code class="language-go">for i, channel := range chans {
+	chanMsg := msg
+	// copy the message because each channel
+	// needs a unique instance but...
+	// fastpath to avoid copy if its the first channel
+	// (the topic already created the first copy)
+	if i &gt; 0 {
+		chanMsg = NewMessage(msg.ID, msg.Body)
+		chanMsg.Timestamp = msg.Timestamp
+		chanMsg.deferred = msg.deferred
+	}
+	if chanMsg.deferred != 0 {
+		channel.StartDeferredTimeout(chanMsg, chanMsg.deferred)
+		continue
+	}
+	err := channel.PutMessage(chanMsg)
+	if err != nil {
+		t.ctx.nsqd.logf(
+			&quot;TOPIC(%s) ERROR: failed to put msg(%s) to channel(%s) - %s&quot;,
+			t.name, msg.ID, channel.name, err)
+	}
+}
+</code></pre>
+
+<p>随后是将消息投到每个channel中，首先先对消息进行复制操作，这里有个优化，对于第一次循环，
+直接使用原消息进行发送以减少复制对象的开销，此后的循环将对消息进行复制。对于即时的消息，
+直接调用channel的<code>PutMessage</code>函数进行投递，对于延迟的消息，
+调用channel的<code>StartDeferredTimeout</code>函数进行投递。对于这两个函数的投递细节，后续博文中会详细分析。</p>
+
+<h2 id="topic下channel的更新:bcb97463d8dd6c9afc36421d8c54864f">Topic下Channel的更新</h2>
+
+<pre><code class="language-go">case &lt;-t.channelUpdateChan:
+	chans = chans[:0]
+	t.RLock()
+	for _, c := range t.channelMap {
+		chans = append(chans, c)
+	}
+	t.RUnlock()
+	if len(chans) == 0 || t.IsPaused() {
+		memoryMsgChan = nil
+		backendChan = nil
+	} else {
+		memoryMsgChan = t.memoryMsgChan
+		backendChan = t.backend.ReadChan()
+	}
+	continue
+</code></pre>
+
+<p>Channel的更新比较简单，从<code>channelMap</code>中取出每个channel，构成channel的数组以便后续进行消息的投递。
+并且根据当前是否有channel以及该topic是否处于暂停状态来决定<code>memoryMsgChan</code>和<code>backendChan</code>是否为空。</p>
+
+<h2 id="topic的暂停和恢复:bcb97463d8dd6c9afc36421d8c54864f">Topic的暂停和恢复</h2>
+
+<pre><code class="language-go">case pause := &lt;-t.pauseChan:
+	if pause || len(chans) == 0 {
+		memoryMsgChan = nil
+		backendChan = nil
+	} else {
+		memoryMsgChan = t.memoryMsgChan
+		backendChan = t.backend.ReadChan()
+	}
+	continue
+</code></pre>
+
+<p>这个case既处理topic的暂停也处理topic的恢复，<code>pause</code>变量决定其究竟是哪一种操作。
+Topic的暂停和恢复其实和topic的更新很像，根据是否暂停以及是否有channel来决定是否分配<code>memoryMsgChan</code>和<code>backendChan</code>。</p>
+
+<h2 id="messagepump-函数的退出:bcb97463d8dd6c9afc36421d8c54864f"><code>messagePump</code>函数的退出</h2>
+
+<pre><code class="language-go">case &lt;-t.exitChan:
+	goto exit
+
+// ...
+exit:
+	t.ctx.nsqd.logf(&quot;TOPIC(%s): closing ... messagePump&quot;, t.name)
+}
+// End of messagePump
+</code></pre>
+
+<p><code>messagePump</code>通过监听<code>exitChan</code>来获知topic是否被删除，当topic的删除时，跳转到函数的最后，输出日志后退出消息循环。</p>
+
+<h1 id="topic的关闭和删除:bcb97463d8dd6c9afc36421d8c54864f">Topic的关闭和删除</h1>
+
+<pre><code class="language-go">// Delete empties the topic and all its channels and closes
+func (t *Topic) Delete() error {
+	return t.exit(true)
+}
+
+// Close persists all outstanding topic data and closes all its channels
+func (t *Topic) Close() error {
+	return t.exit(false)
+}
+
+func (t *Topic) exit(deleted bool) error {
+	if !atomic.CompareAndSwapInt32(&amp;t.exitFlag, 0, 1) {
+		return errors.New(&quot;exiting&quot;)
+	}
+
+	if deleted {
+		t.ctx.nsqd.logf(&quot;TOPIC(%s): deleting&quot;, t.name)
+
+		// since we are explicitly deleting a topic (not just at system exit time)
+		// de-register this from the lookupd
+		t.ctx.nsqd.Notify(t)
+	} else {
+		t.ctx.nsqd.logf(&quot;TOPIC(%s): closing&quot;, t.name)
+	}
+
+	close(t.exitChan)
+
+	// synchronize the close of messagePump()
+	t.waitGroup.Wait()
+
+	if deleted {
+		t.Lock()
+		for _, channel := range t.channelMap {
+			delete(t.channelMap, channel.name)
+			channel.Delete()
+		}
+		t.Unlock()
+
+		// empty the queue (deletes the backend files, too)
+		t.Empty()
+		return t.backend.Delete()
+	}
+
+	// close all the channels
+	for _, channel := range t.channelMap {
+		err := channel.Close()
+		if err != nil {
+			// we need to continue regardless of error to close all the channels
+			t.ctx.nsqd.logf(&quot;ERROR: channel(%s) close - %s&quot;, channel.name, err)
+		}
+	}
+
+	// write anything leftover to disk
+	t.flush()
+	return t.backend.Close()
+}
+// Exiting returns a boolean indicating if this topic is closed/exiting
+func (t *Topic) Exiting() bool {
+	return atomic.LoadInt32(&amp;t.exitFlag) == 1
+}
+</code></pre>
+
+<p>Topic关闭和删除的实现都是调用<code>exit</code>函数，只是传递的参数不同，删除时调用<code>exit(true)</code>，关闭时调用<code>exit(false)</code>。
+<code>exit</code>函数进入时通过<code>atomic.CompareAndSwapInt32</code>函数判断当前是否正在退出，如果不是，则设置退出标记，对于已经在退出的topic，不再重复执行退出函数。
+接着对于关闭操作，使用<code>Notify</code>函数通知lookupd以便其他nsqd获知该消息。</p>
+
+<p>随后，<code>exit</code>函数调用<code>close(t.exitChan)</code>和<code>t.waitGroup.Wait()</code>通知其他正在运行goroutine当前topic已经停止，并等待<code>waitGroup</code>中的goroutine结束运行。</p>
+
+<p>最后，对于删除和关闭两种操作，执行不同的逻辑来完成最后的清理工作：</p>
+
+<ul>
+<li><p>对于删除操作，需要清空<code>channelMap</code>并删除所有channel，然后删除内存和磁盘中所有未投递的消息。最后关闭<code>backend</code>管理的的磁盘文件。</p></li>
+
+<li><p>对于关闭操作，不清空<code>channelMap</code>，只是关闭所有的channel，使用<code>flush</code>函数将所有<code>memoryMsgChan</code>中未投递的消息用<code>writeMessageToBackend</code>保存到磁盘中。最后关闭<code>backend</code>管理的的磁盘文件。</p></li>
+</ul>
+
+<pre><code class="language-go">func (t *Topic) flush() error {
+	//...
+	for {
+		select {
+		case msg := &lt;-t.memoryMsgChan:
+			err := writeMessageToBackend(&amp;msgBuf, msg, t.backend)
+			if err != nil {
+				t.ctx.nsqd.logf(
+					&quot;ERROR: failed to write message to backend - %s&quot;, err)
+			}
+		default:
+			goto finish
+		}
+	}
+	
+finish:
+	return nil
+}
+</code></pre>
+
+<p><code>flush</code>函数也使用到了default分支来检测是否已经处理完全部消息。
+由于此时已经没有生产者向<code>memoryMsgChan</code>提供消息，因此如果出现阻塞就表示消息已经处理完毕。</p>
+
+<pre><code class="language-go">func (t *Topic) Empty() error {
+	for {
+		select {
+		case &lt;-t.memoryMsgChan:
+		default:
+			goto finish
+		}
+	}
+
+finish:
+	return t.backend.Empty()
+}
+</code></pre>
+
+<p>在删除topic时用到的<code>Empty</code>函数跟<code>flush</code>处理逻辑类似，只不过<code>Empty</code>只释放<code>memoryMsgChan</code>消息，而不保存它们。</p>
+
+<h1 id="其他函数:bcb97463d8dd6c9afc36421d8c54864f">其他函数</h1>
+
+<h2 id="depth-函数:bcb97463d8dd6c9afc36421d8c54864f"><code>Depth</code>函数</h2>
+
+<pre><code class="language-go">func (t *Topic) Depth() int64 {
+	return int64(len(t.memoryMsgChan)) + t.backend.Depth()
+}
+</code></pre>
+
+<p><code>Depth</code>函数用于获取当前topic尚未投递的消息数，是<code>memoryMsgChan</code>缓冲区的长度加上<code>backend</code>里消息的个数。</p>
+
+<h2 id="pause-和-unpause-函数:bcb97463d8dd6c9afc36421d8c54864f"><code>Pause</code>和<code>UnPause</code>函数</h2>
+
+<pre><code class="language-go">func (t *Topic) Pause() error {
+	return t.doPause(true)
+}
+
+func (t *Topic) UnPause() error {
+	return t.doPause(false)
+}
+
+func (t *Topic) doPause(pause bool) error {
+	if pause {
+		atomic.StoreInt32(&amp;t.paused, 1)
+	} else {
+		atomic.StoreInt32(&amp;t.paused, 0)
+	}
+
+	select {
+	case t.pauseChan &lt;- pause:
+	case &lt;-t.exitChan:
+	}
+
+	return nil
+}
+
+func (t *Topic) IsPaused() bool {
+	return atomic.LoadInt32(&amp;t.paused) == 1
+}
+</code></pre>
+
+<p>对于很多相似的处理逻辑，nsqd在对外使用不同的函数，但在内部实现上通常把它们合并为一个函数来处理，只是传递的参数不同而已，
+比如前面提到的<code>Close</code>和<code>Delete</code>。<code>Pause</code>和<code>UnPause</code>同样也使用这种方式，通过传递不同的参数调用<code>doPause</code>函数来执行不同操作。
+<code>doPause</code>设置<code>paused</code>标志并向<code>pauseChan</code>发送消息，随后由<code>messagePump</code>在消息循环中暂停topic。</p>
+
+<h2 id="aggregatechannele2eprocessinglatency-函数:bcb97463d8dd6c9afc36421d8c54864f"><code>AggregateChannelE2eProcessingLatency</code>函数</h2>
+
+<p>此函数用于性能统计，在<code>nsqd/statd.go</code>中调用，客户端可以通过HTTP的/stats API看到统计结果。具体细节将在后续博文分析。</p>
+
+<h2 id="与channel相关的函数:bcb97463d8dd6c9afc36421d8c54864f">与channel相关的函数</h2>
+
+<p><code>GetChannel</code>, <code>getOrCreateChannel</code>，<code>GetExistingChannel</code>, <code>DeleteExistingChannel</code>这些函数是与channel相关的函数，将在后续的博文中分析。</p>
+</div>
+	
+	<hr style="clear:both; margin:30px -16px; height:1px;border:none; background-color:#eee">
+
+	
+
+		<div class="tags">
+      <span>2015年11月25日</span>
+      
+        
+          <a href="http://blog.123hurray.tk/tags/nsqd/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>nsqd</paper-button></a>
+        
+       
+    </div>
+	
+	<hr style="clear:both; margin:20px -16px; height:1px;border:none;border-top:1px dashed #03a9f4;">
+	
+  
+  <style>
+  #ds-reset .ds-avatar img {
+	border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-comments {
+    border-bottom:none;
+  }
+  #ds-thread #ds-reset .ds-comment-body {
+	padding-left:85px;
+	padding-top: 4px;
+  }
+  #ds-thread #ds-reset .ds-meta {
+	border:none;
+  }
+  #ds-thread #ds-reset .ds-toolbar {
+	display:none;
+  }
+  #ds-thread #ds-reset .ds-sort a, #ds-thread #ds-reset li.ds-tab a.ds-current
+  ,#ds-thread #ds-reset a.ds-like-thread-button {
+		border:0;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+		transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+		display: inline-block;
+		position: relative;
+		box-sizing: border-box;
+		min-width: 5.14em;
+		margin: 0 0.29em;
+		background: transparent;
+		text-align: center;
+		font: inherit;
+		text-transform: uppercase;
+		outline-width: 0;
+		border-radius: 3px;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		-webkit-user-select: none;
+		user-select: none;
+		cursor: pointer;
+		z-index: 0;
+  }
+ 
+  #ds-thread #ds-reset a.ds-like-thread-button {
+    display:table;
+    margin:auto;
+  }
+  #ds-thread #ds-reset .ds-sort{
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  #ds-thread #ds-reset .ds-sort a{
+    margin:0;
+	padding:3px 5px;
+	margin-left:-1px;
+	box-shadow:none;
+  }
+  #ds-thread #ds-reset .ds-sort a:first-child:not(:last-child){
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child):not(:last-child){
+    border-radius: 0;
+	border-left: 1px solid #eee;
+	border-right: 1px solid #eee;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child){
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+  #ds-thread #ds-reset li.ds-post
+  ,#ds-thread #ds-reset .ds-replybox  {
+	margin-top:16px;
+	border-top:0;
+	padding:15px 20px;
+	display: inline-block;
+	box-sizing: border-box;
+    background: #fff;
+    border-radius: 2px;
+	margin-bottom: 16px;
+	box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  }
+  #ds-thread #ds-reset .ds-replybox {
+    width:100%;
+	z-index:0;
+  }
+  #ds-thread #ds-reset .ds-replybox form {
+	margin-left: 80px;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar {
+    position:relative;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar img {
+    border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-textarea-wrapper,#ds-reset .ds-gradient-bg,#ds-thread #ds-reset .ds-post-button {
+    background: transparent;
+  }
+  
+  </style>
+	<div class="ds-thread" data-thread-key="/2015/11/25/nsqd_source_2_topics_and_channels/" data-title="nsq源码阅读笔记之nsqd（二）——Topic" data-url="http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics_and_channels/"></div>
+  
+  </div>
+</div>
+</paper-item>
+<paper-item>
+  
+    <paper-fab disabled icon="chevron-left"></paper-fab>
+  
+    <div class="flex"></div>
+  
+    <a href="http://blog.123hurray.tk/2015/11/12/nsqd-source-1-init/"><paper-fab icon="chevron-right"></paper-fab></a>
+  
+</paper-item>
+
+
+      <paper-item>
+        <div class="copyright">© 2015 Copyright RayXXZhang</div>
+        <div class="flex"></div>
+        <div class="design">Design <a href="http://pdevty.github.io/blog/">pdevty</a></div>
+      </paper-item>
+    </paper-scroll-header-panel>
+  </paper-drawer-panel>
+  <script src="http://blog.123hurray.tk/js/highlight.pack.js"></script>
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"123hurray"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+        || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+</script>
+
+  <script>
+  hljs.configure({
+  tabReplace: '    ', 
+})
+  hljs.initHighlightingOnLoad();
+  </script>
+  
+</body>
+</html>
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"blog123hurray"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
