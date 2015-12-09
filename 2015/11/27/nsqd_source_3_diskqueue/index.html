@@ -1,0 +1,902 @@
+
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+  <title>nsq源码阅读笔记之nsqd（三）——diskQueue</title>
+  <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
+  <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-toolbar/paper-toolbar.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-item/paper-item.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-menu/paper-menu.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-button/paper-button.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-card/paper-card.html">
+  <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-image/iron-image.html">
+  <link rel="stylesheet" href="http://blog.123hurray.tk/css/highlightjs-theme-github.css">
+  <style is="custom-style">
+    paper-item /deep/ .content {
+		width: 100%;
+	}
+    /deep/ ::-webkit-scrollbar-track {
+      background:transparent;
+    }
+
+    /deep/ ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    /deep/ ::-webkit-scrollbar-thumb {
+      background-color: var(--paper-light-blue-500);
+    }
+  
+  paper-card .summary {
+	clear:both;
+  }
+  .title .main {
+	float:left;
+	font-size: 20px;
+	margin-bottom:10px;
+	margin-right: 15px;
+  }
+  .title paper-button {
+	min-width: 0px;
+   }
+   paper-button.green {
+      color: var(--paper-green-500);
+      --paper-button-flat-focus-color: var(--paper-green-50);
+    }
+    paper-button.green:hover {
+      background: var(--paper-green-50);
+    }
+   .article .categories {
+	float:right;
+	margin-right: 10px;
+   }
+   .categories iron-icon, .tags iron-icon{
+	--iron-icon-height: 16px;
+    --iron-icon-width: 16px;
+  }
+  .categories,.tags {
+  
+	font-size:14px;
+  }
+  .title paper-button /deep/ paper-material{
+	padding: 0px;
+	font-size:14px;
+  }
+  paper-button.blue {
+      color: var(--paper-light-blue-500);
+      --paper-button-flat-focus-color: var(--paper-light-blue-50);
+    }
+	
+    paper-button.blue:hover {
+      background: var(--paper-light-blue-50);
+    }
+  a {
+	  color: inherit;
+	  text-decoration: none;
+	}
+	.article a {
+	  color: var(--paper-light-blue-500);
+	  text-decoration: underline;
+	}
+	.main.single {
+	  width:100%;
+	  font-size:30px;
+	  line-height:45px;
+	  margin: 30px 10px;
+	}
+   #articles {
+      @apply(--layout-vertical);
+      @apply(--center-justified);
+      margin-left: auto;
+      margin-right: auto;
+	  margin-top: 20px;
+    }
+	.tags /deep/ paper-material {
+		padding: 0px;
+	}
+	 paper-card {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .nav {
+      border-right: 1px solid #ccc;
+    }
+    
+    paper-scroll-header-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: var(--paper-grey-200, #eee);
+       
+      --paper-scroll-header-panel-full-header: {
+        background-image: url(http://blog.123hurray.tk/images/cover.png);
+      };
+       
+      --paper-scroll-header-panel-condensed-header: {
+        background-image: url(http://blog.123hurray.tk/images/cover.png);
+      };
+    }
+    
+    paper-toolbar {
+       
+      height: 256px;
+      background-color: transparent;
+    }
+    .profile{
+      width: 100%;
+      padding-bottom: 20px;
+    }
+    .photo{
+      margin: 20px;
+      display: inline-block;
+      height: 64px; width: 64px;
+      border-radius: 50%;
+    }
+    .article{
+      border: 1px solid #bebebe;
+      padding: 16px;
+      margin: 16px;
+      border-radius: 5px;
+      background-color: #fafafa;
+    }
+	.toolbar-tools.paper-toolbar .title.bottom {
+		font-size: 40px;
+	}
+    .title.bottom.title{
+      padding: 8px 0 16px;
+    }
+    .article-body{
+      font-size: 16px;
+      padding-bottom: 8px;
+    }
+    .author{
+      font-size: 16px;
+      padding-left: 20px;
+      color: white;
+    }
+    .design{
+      font-size: 14px;
+    }
+    .copyright{
+      font-size: 16px;
+    }
+    paper-menu a {
+      text-decoration: none;
+      color: #212121;
+    }
+	.toolbar-tools.paper-toolbar .title {
+		pointer-events: initial;
+	}
+  * {
+    font-family: 'Consolas', 'Microsoft YaHei UI', 'Microsoft YaHei', '微软雅黑';
+  }
+	  </style>
+	<link rel="stylesheet" href="http://blog.123hurray.tk/css/markdown.css">
+</head>
+<body>
+  <paper-drawer-panel id="drawerPanel" responsive-width="1280px">
+    <div class="nav scroll" drawer>
+    
+      <iron-image class="profile" sizing="cover" src="http://blog.123hurray.tk/images/profile.png">
+    
+        
+          <iron-image class="photo" sizing="cover" src="http://blog.123hurray.tk/images/photo.png"></iron-image>
+        
+          <div class="author">RayXXZhang</div>
+      </iron-image>
+      <paper-menu>
+        <a href="http://blog.123hurray.tk/index.html"><paper-item>
+          <iron-icon icon="home"></iron-icon>　<div class="flex">主页</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://blog.123hurray.tk/categories/"><paper-item>
+          <iron-icon icon="drafts"></iron-icon>　<div class="flex">分类</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+        <a href="http://blog.123hurray.tk/tags/"><paper-item>
+          <iron-icon icon="loyalty"></iron-icon>　<div class="flex">标签</div>
+          <iron-icon icon="chevron-right"></iron-icon>
+        </paper-item></a>
+      </paper-menu>
+    </div>
+
+    <paper-scroll-header-panel main condenses header-height="256" condensed-header-height="64">
+	
+      <paper-toolbar>
+
+        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+		<div class="bottom title"><a href="http://blog.123hurray.tk/index.html">RayXXZhang的博客</a></div>
+        
+        <div class="flex"></div>
+		
+			
+				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/weibo.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://github.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/github.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/facebook.png"></paper-icon-button></a>
+			
+		
+			
+				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://blog.123hurray.tk/images/twitter.png"></paper-icon-button></a>
+			
+		
+		<a href="http://blog.123hurray.tk/index.xml"><paper-icon-button src="http://blog.123hurray.tk/images/feed.png"></paper-icon-button></a>
+      
+      </paper-toolbar>
+
+
+<paper-item>
+<div class="content">
+
+  <div class="article">
+    <div class="title"><div class="main single">nsq源码阅读笔记之nsqd（三）——diskQueue
+    
+      
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://blog.123hurray.tk/categories/nsq%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>nsq源码解析</paper-button></a>
+	
+	  <a href="http://blog.123hurray.tk/categories/golang/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Golang</paper-button></a>
+	
+</div>
+ 
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body">
+
+<p><code>diskQueue</code>是<code>backendQueue</code>接口的一个实现。<code>backendQueue</code>的作用是在实现在内存go channel缓冲区满的情况下对消息的处理的对象。
+除了<code>diskQueue</code>外还有<code>dummyBackendQueue</code>实现了<code>backendQueue</code>接口。</p>
+
+<p>对于临时（#ephemeral结尾）Topic/Channel，在创建时会使用<code>dummyBackendQueue</code>初始化<code>backend</code>，
+<code>dummyBackendQueue</code>只是为了统一临时和非临时Topic/Channel而写的，它只是实现了接口，不做任何实质上的操作，
+因此在内存缓冲区满时直接丢弃消息。这也是临时Topic/Channel和非临时的一个比较大的差别。
+每个非临时Topic/Channel，创建的时候使用<code>diskQueue</code>初始化<code>backend</code>，<code>diskQueue</code>的功能是将消息写入磁盘进行持久化，
+并在需要时从中取出消息重新向客户端投递。</p>
+
+<p><code>diskQueue</code>的实现在<code>nsqd/disk_queue.go</code>中。<strong>需要注意一点</strong>，查找<code>diskQueue</code>中的函数的调用可能不会返回正确的结果，
+因为<code>diskQueue</code>对外是以<code>backendQueue</code>形式存在，因此查找<code>diskQueue</code>的函数的调用情况时应当查找<code>backendQueue</code>中相应函数的调用。</p>
+
+<h1 id="diskqueue-的创建和初始化:944b75e8330a31bfc7882b7e80bb7fb5"><code>diskQueue</code>的创建和初始化</h1>
+
+<pre><code class="language-go">// newDiskQueue instantiates a new instance of diskQueue, retrieving metadata
+// from the filesystem and starting the read ahead goroutine
+func newDiskQueue(name string, dataPath string, maxBytesPerFile int64,
+	minMsgSize int32, maxMsgSize int32,
+	syncEvery int64, syncTimeout time.Duration,
+	logger logger) BackendQueue {
+	d := diskQueue{
+		name:              name,
+		dataPath:          dataPath,
+		maxBytesPerFile:   maxBytesPerFile,
+		minMsgSize:        minMsgSize,
+		maxMsgSize:        maxMsgSize,
+		readChan:          make(chan []byte),
+		writeChan:         make(chan []byte),
+		writeResponseChan: make(chan error),
+		emptyChan:         make(chan int),
+		emptyResponseChan: make(chan error),
+		exitChan:          make(chan int),
+		exitSyncChan:      make(chan int),
+		syncEvery:         syncEvery,
+		syncTimeout:       syncTimeout,
+		logger:            logger,
+	}
+
+	// no need to lock here, nothing else could possibly be touching this instance
+	err := d.retrieveMetaData()
+	if err != nil &amp;&amp; !os.IsNotExist(err) {
+		d.logf(&quot;ERROR: diskqueue(%s) failed to retrieveMetaData - %s&quot;, d.name, err)
+	}
+
+	go d.ioLoop()
+
+	return &amp;d
+}
+</code></pre>
+
+<p><code>diskQueue</code>的获得是通过<code>newDiskQueue</code>，该函数比较简单，通过传入的参数创建一个<code>dispQueue</code>，
+然后通过<code>retrieveMetaData</code>函数获取之前与该<code>diskQueue</code>相关联的Topic/Channel已经持久化的信息。最后启动<code>ioLoop</code>循环处理消息。</p>
+
+<pre><code class="language-go">// retrieveMetaData initializes state from the filesystem
+func (d *diskQueue) retrieveMetaData() error {
+	var f *os.File
+	var err error
+
+	fileName := d.metaDataFileName()
+	f, err = os.OpenFile(fileName, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var depth int64
+	_, err = fmt.Fscanf(f, &quot;%d\n%d,%d\n%d,%d\n&quot;,
+		&amp;depth,
+		&amp;d.readFileNum, &amp;d.readPos,
+		&amp;d.writeFileNum, &amp;d.writePos)
+	if err != nil {
+		return err
+	}
+	atomic.StoreInt64(&amp;d.depth, depth)
+	d.nextReadFileNum = d.readFileNum
+	d.nextReadPos = d.readPos
+
+	return nil
+}
+</code></pre>
+
+<p><code>retrieveMetaData</code>函数从磁盘中恢复<code>diskQueue</code>的状态。<code>diskQueue</code>会定时将自己的状态备份到文件中，
+文件名由<code>metaDataFileName</code>函数确定。<code>retrieveMetaData</code>函数同样通过<code>metaDataFileName</code>函数获得保存状态的文件名并打开。
+该文件只有三行，格式为<code>%d\n%d,%d\n%d,%d\n</code>，第一行保存着该<code>diskQueue</code>中消息的数量（<code>depth</code>），
+第二行保存<code>readFileNum</code>和<code>readPos</code>，第三行保存<code>writeFileNum</code>和<code>writePos</code>。</p>
+
+<p>这里不太理解的一个地方是<code>d.depth</code>通过一个临时变量去获取然后通过<code>atomic.StoreInt64</code>保存。个人觉得没有必要这么做。
+当然作者在<a href="https://github.com/nsqio/nsq/pull/203#discussion-diff-4280536">nsqd: diskqueue corruption and depth accounting</a>这个Pull Request中也提到：</p>
+
+<blockquote>
+<p>I dont believe that this should be strictly necessary because <code>retrieveMetaData</code> is only ever called in <code>NewDiskQueue</code> and the <code>ioLoop</code> goroutine is launched after that call (which according to the go memory model is safe).</p>
+
+<p>However, I&rsquo;m not 100% sure about interactions between the go memory model, go-routines, and the combined use of atomic and non-atomic operations (which is what this was relying on before this change&hellip; i.e. this was the only mutation of <code>d.depth</code> that was <strong>not</strong> using atomic ops).</p>
+</blockquote>
+
+<p>因此，这只是个比较保险的做法，并不一定意味着直接保存到<code>d.depth</code>就不安全。</p>
+
+<pre><code class="language-go">
+// persistMetaData atomically writes state to the filesystem
+func (d *diskQueue) persistMetaData() error {
+	var f *os.File
+	var err error
+
+	fileName := d.metaDataFileName()
+	tmpFileName := fmt.Sprintf(&quot;%s.%d.tmp&quot;, fileName, rand.Int())
+
+	// write to tmp file
+	f, err = os.OpenFile(tmpFileName, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintf(f, &quot;%d\n%d,%d\n%d,%d\n&quot;,
+		atomic.LoadInt64(&amp;d.depth),
+		d.readFileNum, d.readPos,
+		d.writeFileNum, d.writePos)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	f.Sync()
+	f.Close()
+
+	// atomically rename
+	return atomicRename(tmpFileName, fileName)
+}
+</code></pre>
+
+<p>与<code>retrieveMetaData</code>相对应的是<code>persistMetaData</code>函数，这个函数将运行时的元数据保存到文件用于下次重新构建<code>diskQueue</code>时的恢复。
+逻辑基本与<code>retrieveMetaData</code>，此处不再赘述。</p>
+
+<h1 id="diskqueue-的消息循环:944b75e8330a31bfc7882b7e80bb7fb5"><code>diskQueue</code>的消息循环</h1>
+
+<pre><code class="language-go">// ioLoop provides the backend for exposing a go channel (via ReadChan())
+// in support of multiple concurrent queue consumers
+//
+// it works by looping and branching based on whether or not the queue has data
+// to read and blocking until data is either read or written over the appropriate
+// go channels
+//
+// conveniently this also means that we're asynchronously reading from the filesystem
+func (d *diskQueue) ioLoop() {
+	var dataRead []byte
+	var err error
+	var count int64
+	var r chan []byte
+
+	syncTicker := time.NewTicker(d.syncTimeout)
+
+	for {
+		// dont sync all the time :)
+		if count == d.syncEvery {
+			count = 0
+			d.needSync = true
+		}
+
+		if d.needSync {
+			err = d.sync()
+			if err != nil {
+				d.logf(&quot;ERROR: diskqueue(%s) failed to sync - %s&quot;, d.name, err)
+			}
+		}
+
+		if (d.readFileNum &lt; d.writeFileNum) || (d.readPos &lt; d.writePos) {
+			if d.nextReadPos == d.readPos {
+				dataRead, err = d.readOne()
+				if err != nil {
+					d.logf(&quot;ERROR: reading from diskqueue(%s) at %d of %s - %s&quot;,
+						d.name, d.readPos, d.fileName(d.readFileNum), err)
+					d.handleReadError()
+					continue
+				}
+			}
+			r = d.readChan
+		} else {
+			r = nil
+		}
+
+		select {
+		// the Go channel spec dictates that nil channel operations (read or write)
+		// in a select are skipped, we set r to d.readChan only when there is data to read
+		case r &lt;- dataRead:
+			// moveForward sets needSync flag if a file is removed
+			d.moveForward()
+		case &lt;-d.emptyChan:
+			d.emptyResponseChan &lt;- d.deleteAllFiles()
+			count = 0
+		case dataWrite := &lt;-d.writeChan:
+			count++
+			d.writeResponseChan &lt;- d.writeOne(dataWrite)
+		case &lt;-syncTicker.C:
+			if count &gt; 0 {
+				count = 0
+				d.needSync = true
+			}
+		case &lt;-d.exitChan:
+			goto exit
+		}
+	}
+
+exit:
+	d.logf(&quot;DISKQUEUE(%s): closing ... ioLoop&quot;, d.name)
+	syncTicker.Stop()
+	d.exitSyncChan &lt;- 1
+}
+</code></pre>
+
+<p><code>ioLoop</code>函数实现了<code>diskQueue</code>的消息循环，<code>diskQueue</code>的定时操作和读写操作的核心都在这个函数中完成。</p>
+
+<p>函数首先使用<code>time.NewTicker(d.syncTimeout)</code>定义了<code>syncTicker</code>变量，<code>syncTicker</code>的类型是<code>time.Ticker</code>，
+每隔<code>d.syncTimeout</code>时间就会在<code>syncTicker.C</code>这个go channel产生一个消息。
+通过select <code>syncTicker.C</code>能实现至多<code>d.syncTimeout</code>时间就跳出select块一次，这种方式相当于一个延时的<code>default</code>子句。
+在<code>ioLoop</code>中，通过这种方式，就能在一个goroutine中既实现消息的接收又实现定时任务（跳出select后执行定时任务，然后在进入select）。
+有点类似于定时的轮询。</p>
+
+<p><code>ioLoop</code>的定时任务是调用<code>sync</code>函数刷新文件，防止突然结束程序后内存中的内容未被提交到磁盘，导致内容丢失。
+控制是否需要同步的变量是<code>d.needSync</code>，该变量在一次<code>sync</code>后会被置为<code>false</code>，在许多需要刷新文件的地方会被置为<code>true</code>。
+在<code>ioLoop</code>中，<code>d.needSync</code>变量还跟刷新计数器<code>count</code>变量有关，<code>count</code>值的变化规则如下：</p>
+
+<ol>
+<li>如果一次消息循环中，有写入操作，那么<code>count</code>就会被自增。</li>
+<li>当<code>count</code>达到<code>d.syncEvery</code>时，会将<code>count</code>重置为0并且将<code>d.needSync</code>置为<code>true</code>，随后进行文件的刷新。</li>
+<li>在<code>emptyChan</code>收到消息时，<code>count</code>会被重置为0，因为文件已经被删除了，所有要重置刷新计数器。</li>
+<li>在<code>syncTicker.C</code>收到消息后，会将<code>count</code>重置为0，并且将<code>d.needSync</code>置为<code>true</code>。也就是至多<code>d.syncTimeout</code>时间刷新一次文件。</li>
+</ol>
+
+<p><code>ioLoop</code>还定时检测当前是否有数据需要被读取，如果<code>(d.readFileNum &lt; d.writeFileNum) || (d.readPos &lt; d.writePos)</code>
+和`<code>d.nextReadPos == d.readPos</code>这两个条件成立，则执行<code>d.readOne()</code>并将结果放入<code>dataRead</code>中，然后设置<code>r</code>为<code>d.readChan</code>。
+如果条件不成立，则将<code>r</code>置为空值<code>nil</code>。随后的select语句中有<code>case r &lt;- dataRead:</code>这样一个分支，在注释中作者写了这是一个Golang的特性，
+即：如果<code>r</code>不为空，则会将<code>dataRead</code>送入go channel。进入<code>d.readChan</code>的消息通过<code>ReadChan</code>函数向外暴露，最终被Topic/Channel的消息循环读取。
+而如果<code>r</code>为空，则这个分支会被跳过。这个特性的使用统一了select的逻辑，简化了当数据为空时的判断。</p>
+
+<h1 id="diskqueue-的写操作:944b75e8330a31bfc7882b7e80bb7fb5"><code>diskQueue</code>的写操作</h1>
+
+<pre><code class="language-go">// Put writes a []byte to the queue
+func (d *diskQueue) Put(data []byte) error {
+	d.RLock()
+	defer d.RUnlock()
+
+	if d.exitFlag == 1 {
+		return errors.New(&quot;exiting&quot;)
+	}
+
+	d.writeChan &lt;- data
+	return &lt;-d.writeResponseChan
+}
+</code></pre>
+
+<p>写操作的对外接口是<code>Put</code>函数，该函数比较简单，加锁，并且将数据放入<code>d.writeChan</code>，等待<code>d.writeResponseChan</code>的结果后返回。
+<code>d.writeChan</code>的接收在<code>ioLoop</code>中select的一个分支，处理时调用<code>writeOne</code>函数，并将处理结果放入<code>d.writeResponseChan</code>。</p>
+
+<pre><code class="language-go">// writeOne performs a low level filesystem write for a single []byte
+// while advancing write positions and rolling files, if necessary
+func (d *diskQueue) writeOne(data []byte) error {
+	var err error
+
+	if d.writeFile == nil {
+		curFileName := d.fileName(d.writeFileNum)
+		d.writeFile, err = os.OpenFile(curFileName, os.O_RDWR|os.O_CREATE, 0600)
+		if err != nil {
+			return err
+		}
+
+		d.logf(&quot;DISKQUEUE(%s): writeOne() opened %s&quot;, d.name, curFileName)
+
+		if d.writePos &gt; 0 {
+			_, err = d.writeFile.Seek(d.writePos, 0)
+			if err != nil {
+				d.writeFile.Close()
+				d.writeFile = nil
+				return err
+			}
+		}
+	}
+
+	dataLen := int32(len(data))
+
+	if dataLen &lt; d.minMsgSize || dataLen &gt; d.maxMsgSize {
+		return fmt.Errorf(&quot;invalid message write size (%d) maxMsgSize=%d&quot;, dataLen, d.maxMsgSize)
+	}
+
+	d.writeBuf.Reset()
+	err = binary.Write(&amp;d.writeBuf, binary.BigEndian, dataLen)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.writeBuf.Write(data)
+	if err != nil {
+		return err
+	}
+
+	// only write to the file once
+	_, err = d.writeFile.Write(d.writeBuf.Bytes())
+	if err != nil {
+		d.writeFile.Close()
+		d.writeFile = nil
+		return err
+	}
+
+	totalBytes := int64(4 + dataLen)
+	d.writePos += totalBytes
+	atomic.AddInt64(&amp;d.depth, 1)
+
+	if d.writePos &gt; d.maxBytesPerFile {
+		d.writeFileNum++
+		d.writePos = 0
+
+		// sync every time we start writing to a new file
+		err = d.sync()
+		if err != nil {
+			d.logf(&quot;ERROR: diskqueue(%s) failed to sync - %s&quot;, d.name, err)
+		}
+
+		if d.writeFile != nil {
+			d.writeFile.Close()
+			d.writeFile = nil
+		}
+	}
+
+	return err
+}
+</code></pre>
+
+<p><code>writeOne</code>函数是写操作的最终执行部分，负责将消息写入磁盘。函数逻辑比较简单。消息写入步骤如下：</p>
+
+<ol>
+<li>若当前要写的文件不存在，则通过<code>d.fileName(d.writeFileNum)</code>获得文件名，并创建文件</li>
+<li>根据<code>d.writePos</code>定位本次写的位置</li>
+<li>从要写入的内容得到要写入的长度</li>
+<li>先写入3中计算出的消息长度（4字节），然后写入消息本身</li>
+<li>将<code>d.writePos</code>后移<code>4 + 消息长度</code>作为下次写入位置。加4是因为消息长度本身也占4字节。</li>
+<li>判断<code>d.writePos</code>是否大于每个文件的最大字节数<code>d.maxBytesPerFile</code>，如果是，则将<code>d.writeFileNum</code>加1，
+并重置<code>d.writePos</code>。这个操作的目的是为了防止单个文件过大。</li>
+<li>如果下次要写入新的文件，那么需要调用<code>sync</code>函数对当前文件进行同步。</li>
+</ol>
+
+<h1 id="diskqueue-的读操作:944b75e8330a31bfc7882b7e80bb7fb5"><code>diskQueue</code>的读操作</h1>
+
+<pre><code class="language-go">// readOne performs a low level filesystem read for a single []byte
+// while advancing read positions and rolling files, if necessary
+func (d *diskQueue) readOne() ([]byte, error) {
+	var err error
+	var msgSize int32
+
+	if d.readFile == nil {
+		curFileName := d.fileName(d.readFileNum)
+		d.readFile, err = os.OpenFile(curFileName, os.O_RDONLY, 0600)
+		if err != nil {
+			return nil, err
+		}
+
+		d.logf(&quot;DISKQUEUE(%s): readOne() opened %s&quot;, d.name, curFileName)
+
+		if d.readPos &gt; 0 {
+			_, err = d.readFile.Seek(d.readPos, 0)
+			if err != nil {
+				d.readFile.Close()
+				d.readFile = nil
+				return nil, err
+			}
+		}
+
+		d.reader = bufio.NewReader(d.readFile)
+	}
+
+	err = binary.Read(d.reader, binary.BigEndian, &amp;msgSize)
+	if err != nil {
+		d.readFile.Close()
+		d.readFile = nil
+		return nil, err
+	}
+
+	if msgSize &lt; d.minMsgSize || msgSize &gt; d.maxMsgSize {
+		// this file is corrupt and we have no reasonable guarantee on
+		// where a new message should begin
+		d.readFile.Close()
+		d.readFile = nil
+		return nil, fmt.Errorf(&quot;invalid message read size (%d)&quot;, msgSize)
+	}
+
+	readBuf := make([]byte, msgSize)
+	_, err = io.ReadFull(d.reader, readBuf)
+	if err != nil {
+		d.readFile.Close()
+		d.readFile = nil
+		return nil, err
+	}
+
+	totalBytes := int64(4 + msgSize)
+
+	// we only advance next* because we have not yet sent this to consumers
+	// (where readFileNum, readPos will actually be advanced)
+	d.nextReadPos = d.readPos + totalBytes
+	d.nextReadFileNum = d.readFileNum
+
+	// TODO: each data file should embed the maxBytesPerFile
+	// as the first 8 bytes (at creation time) ensuring that
+	// the value can change without affecting runtime
+	if d.nextReadPos &gt; d.maxBytesPerFile {
+		if d.readFile != nil {
+			d.readFile.Close()
+			d.readFile = nil
+		}
+
+		d.nextReadFileNum++
+		d.nextReadPos = 0
+	}
+
+	return readBuf, nil
+}
+</code></pre>
+
+<p>消息读取对外暴露的是一个go channel，而数据的最终来源是<code>ioLoop</code>中调用的<code>readOne</code>函数。<code>readOne</code>函数逻辑跟<code>writeOne</code>类似，
+只是把写操作换成了读操作，唯一差异较大的地方是<code>d.nextReadPos</code>和<code>d.nextReadFileNum</code>这两个变量的使用。</p>
+
+<p>在写操作时，如果写入成功，则可以直接将写入位置和写入文件更新。但是对于读操作来说，由于读取的目的是为了向客户端投递，
+因此无法保证一定能投递成功。因此需要使用next开头的两个变量来保存成功后需要读的位置，如果投递没有成功，
+则继续使用当前的读取位置将再一次尝试将消息投递给客户端。</p>
+
+<pre><code class="language-go">func (d *diskQueue) moveForward() {
+	oldReadFileNum := d.readFileNum
+	d.readFileNum = d.nextReadFileNum
+	d.readPos = d.nextReadPos
+	depth := atomic.AddInt64(&amp;d.depth, -1)
+
+	// see if we need to clean up the old file
+	if oldReadFileNum != d.nextReadFileNum {
+		// sync every time we start reading from a new file
+		d.needSync = true
+
+		fn := d.fileName(oldReadFileNum)
+		err := os.Remove(fn)
+		if err != nil {
+			d.logf(&quot;ERROR: failed to Remove(%s) - %s&quot;, fn, err)
+		}
+	}
+
+	d.checkTailCorruption(depth)
+}
+</code></pre>
+
+<p>当消息投递成功后，则使用<code>moveForward</code>函数将保存在<code>d.nextReadPos</code>和<code>d.nextReadFileNum</code>中的值取出，
+赋值给<code>d.readPos</code>和<code>d.readFileNum</code>，<code>moveForward</code>函数还负责清理已经读完的旧文件。最后，调用<code>checkTailCorruption</code>函数检查文件是否有错，
+如果出现错误，则调用<code>skipToNextRWFile</code>重置读取和写入的文件编号和位置。</p>
+
+<h1 id="diskqueue-中的其他函数:944b75e8330a31bfc7882b7e80bb7fb5"><code>diskQueue</code>中的其他函数</h1>
+
+<p><code>diskQueue</code>中还有与错误处理相关的<code>handleReadError</code>，与关闭<code>diskQueue</code>相关的<code>Close</code>，<code>Delete</code>，<code>exit</code>，<code>Empty</code>和<code>deleteAllFiles</code>等，
+函数，逻辑较简单，不再专门分析。</p>
+
+<h1 id="diskqueue-总结:944b75e8330a31bfc7882b7e80bb7fb5"><code>diskQueue</code>总结</h1>
+
+<p><code>diskQueue</code>主要逻辑是对磁盘的读写操作，较为琐碎但没有复杂的架构。
+其中消息循环的思路和读写过程周全的考虑都值得学习的。</p>
+</div>
+	
+	<hr style="clear:both; margin:30px -16px; height:1px;border:none; background-color:#eee">
+
+	
+
+		<div class="tags">
+      <span>2015年11月27日</span>
+      
+        
+          <a href="http://blog.123hurray.tk/tags/nsqd/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>nsqd</paper-button></a>
+        
+       
+    </div>
+	
+	<hr style="clear:both; margin:20px -16px; height:1px;border:none;border-top:1px dashed #03a9f4;">
+	
+  
+  <style>
+  #ds-reset .ds-avatar img {
+	border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-comments {
+    border-bottom:none;
+  }
+  #ds-thread #ds-reset .ds-comment-body {
+	padding-left:85px;
+	padding-top: 4px;
+  }
+  #ds-thread #ds-reset .ds-meta {
+	border:none;
+  }
+  #ds-thread #ds-reset .ds-toolbar {
+	display:none;
+  }
+  #ds-thread #ds-reset .ds-sort a, #ds-thread #ds-reset li.ds-tab a.ds-current
+  ,#ds-thread #ds-reset a.ds-like-thread-button {
+		border:0;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+		transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+		display: inline-block;
+		position: relative;
+		box-sizing: border-box;
+		min-width: 5.14em;
+		margin: 0 0.29em;
+		background: transparent;
+		text-align: center;
+		font: inherit;
+		text-transform: uppercase;
+		outline-width: 0;
+		border-radius: 3px;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		-webkit-user-select: none;
+		user-select: none;
+		cursor: pointer;
+		z-index: 0;
+  }
+ 
+  #ds-thread #ds-reset a.ds-like-thread-button {
+    display:table;
+    margin:auto;
+  }
+  #ds-thread #ds-reset .ds-sort{
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  #ds-thread #ds-reset .ds-sort a{
+    margin:0;
+	padding:3px 5px;
+	margin-left:-1px;
+	box-shadow:none;
+  }
+  #ds-thread #ds-reset .ds-sort a:first-child:not(:last-child){
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child):not(:last-child){
+    border-radius: 0;
+	border-left: 1px solid #eee;
+	border-right: 1px solid #eee;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child){
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+  #ds-thread #ds-reset li.ds-post
+  ,#ds-thread #ds-reset .ds-replybox  {
+	margin-top:16px;
+	border-top:0;
+	padding:15px 20px;
+	display: inline-block;
+	box-sizing: border-box;
+    background: #fff;
+    border-radius: 2px;
+	margin-bottom: 16px;
+	box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  }
+  #ds-thread #ds-reset .ds-replybox {
+    width:100%;
+	z-index:0;
+  }
+  #ds-thread #ds-reset .ds-replybox form {
+	margin-left: 80px;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar {
+    position:relative;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar img {
+    border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-textarea-wrapper,#ds-reset .ds-gradient-bg,#ds-thread #ds-reset .ds-post-button {
+    background: transparent;
+  }
+  
+  </style>
+	<div class="ds-thread" data-thread-key="/2015/11/27/nsqd_source_3_diskqueue/" data-title="nsq源码阅读笔记之nsqd（三）——diskQueue" data-url="http://blog.123hurray.tk/2015/11/27/nsqd_source_3_diskqueue/"></div>
+  
+  </div>
+</div>
+</paper-item>
+<paper-item>
+  
+    <paper-fab disabled icon="chevron-left"></paper-fab>
+  
+    <div class="flex"></div>
+  
+    <a href="http://blog.123hurray.tk/2015/11/27/nsqd_source_6_statistics/"><paper-fab icon="chevron-right"></paper-fab></a>
+  
+</paper-item>
+
+
+      <paper-item>
+        <div class="copyright">© 2015 Copyright RayXXZhang</div>
+        <div class="flex"></div>
+        <div class="design">Design <a href="http://pdevty.github.io/blog/">pdevty</a></div>
+      </paper-item>
+    </paper-scroll-header-panel>
+  </paper-drawer-panel>
+  <script src="http://blog.123hurray.tk/js/highlight.pack.js"></script>
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"123hurray"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+        || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+</script>
+
+  <script>
+  hljs.configure({
+  tabReplace: '    ', 
+})
+  hljs.initHighlightingOnLoad();
+  </script>
+  
+</body>
+</html>
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"blog123hurray"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>

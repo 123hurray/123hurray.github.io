@@ -332,8 +332,7 @@ pyi-build specfile
 
 &lt;p&gt;在Hugo主题选择方面，一个名为&lt;a href=&#34;https://github.com/pdevty/polymer&#34;&gt;Polymer&lt;/a&gt;的主题让我眼前一亮。&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;https://github.com/pdevty/polymer/blob/master/images/tn.png?raw=true&#34; alt=&#34;Hugo的Polymer主题&#34; /&gt;
-&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://github.com/pdevty/polymer/blob/master/images/tn.png?raw=true&#34; alt=&#34;Hugo的Polymer主题&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;从Polymer这个名字一眼就可以看出是来自Google的&lt;a href=&#34;https://www.polymer-project.org/1.0/&#34;&gt;Polymer项目&lt;/a&gt;。
 作为这两年在Google I/O大会上提及的前端开发框架，它使用了许多新的技术，如web components，shadow DOM等等，把html的一些基础组件封装成了一些十分方便使用的控件，样式优雅开发简单。

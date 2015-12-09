@@ -181,6 +181,9 @@
 	.toolbar-tools.paper-toolbar .title {
 		pointer-events: initial;
 	}
+  * {
+    font-family: 'Consolas', 'Microsoft YaHei UI', 'Microsoft YaHei', '微软雅黑';
+  }
 	  </style>
 	<link rel="stylesheet" href="http://blog.123hurray.tk/css/markdown.css">
 </head>
@@ -265,7 +268,7 @@
 
 <p>与<strong>Topic</strong>相关的代码主要位于<code>nsqd/nsqd.go</code>, <code>nsqd/topic.go</code>中。</p>
 
-<h1 id="topic的获取:bcb97463d8dd6c9afc36421d8c54864f">Topic的获取</h1>
+<h1 id="topic的获取:efd667b960aa7ec362edb15e7af0b343">Topic的获取</h1>
 
 <p>Topic通过<code>GetTopic</code>函数获取</p>
 
@@ -416,7 +419,7 @@ Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。</p
 <p>示例说明了可以通过对exitChan的使用来结束对阻塞go channel的等待。需要说明的是，在真实场景中，
 消费者在发出结束的意图后可能并不会去处理尚未被处理的消息，所以像示例中的Task1是无法正常结束的。</p>
 
-<h1 id="topic的创建:bcb97463d8dd6c9afc36421d8c54864f">Topic的创建</h1>
+<h1 id="topic的创建:efd667b960aa7ec362edb15e7af0b343">Topic的创建</h1>
 
 <p>当<code>GetTopic</code>未在已存在的topic中找到指定topic时，就会使用<code>NewTopic</code>函数新建一个<code>Topic</code>对象。
 <code>Topic</code>和<code>NewTopic</code>都位于<code>nsqd/topic.go</code>中。</p>
@@ -499,7 +502,7 @@ Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。</p
 <p>在执行持久化之前，<code>case n.notifyChan &lt;- v:</code>语句向<code>notifyChan</code>传递消息，触发<code>lookupLoop</code>函数（<code>nsqd/lookup.go</code>中）接收<code>notifyChan</code>消息的部分，
 从而实现向<code>loopupd</code>注册/取消注册响应的topic或channel。</p>
 
-<h1 id="消息进入topic:bcb97463d8dd6c9afc36421d8c54864f">消息进入topic</h1>
+<h1 id="消息进入topic:efd667b960aa7ec362edb15e7af0b343">消息进入topic</h1>
 
 <p>客户端通过nsqd的HTTP API或TCP API向特定topic发送消息，nsqd的HTTP或TCP模块通过调用对应topic的<code>PutMessage</code>或<code>PutMessages</code>函数，
 将消息投递到topic中。<code>PutMessage</code>或<code>PutMessages</code>函数都通过topic的私有函数<code>put</code>进行消息的投递，两个函数的区别仅在<code>PutMessage</code>只调用一次<code>put</code>，
@@ -515,7 +518,7 @@ Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。</p
 }
 </code></pre>
 
-<h2 id="带缓冲的go-channel的特性:bcb97463d8dd6c9afc36421d8c54864f">带缓冲的Go channel的特性</h2>
+<h2 id="带缓冲的go-channel的特性:efd667b960aa7ec362edb15e7af0b343">带缓冲的Go channel的特性</h2>
 
 <p><code>put</code>函数使用了一个带缓冲的go channel的特性：如果case里的go channel阻塞了，那么就会跳过该case语句，执行default分支。即，如果当前<code>memoryMsgChan</code>还有足够缓冲空间，
 则消息被投入<code>memoryMsgChan</code>，如果当前<code>memoryMsgChan</code>的缓冲区已满，则将执行default分支，从而将消息保存到<code>backend</code>中。</p>
@@ -582,7 +585,7 @@ Worker1 receive  Task 3
 因此当消费者向<code>workerChan</code>发送第4个消息的时候会被阻塞，从运行结果看，没有消息被投向<code>worker2Chan</code>，
 程序在遇到阻塞时进入了default分支，打印出<code>Channel queue full</code>。特定场景下合理使用这一特性能够大幅减少程序的复杂度。</p>
 
-<h2 id="put-函数对消息的持久化:bcb97463d8dd6c9afc36421d8c54864f"><code>put</code>函数对消息的持久化</h2>
+<h2 id="put-函数对消息的持久化:efd667b960aa7ec362edb15e7af0b343"><code>put</code>函数对消息的持久化</h2>
 
 <pre><code class="language-go">b := bufferPoolGet()
 err := writeMessageToBackend(b, m, t.backend)
@@ -619,7 +622,7 @@ if err != nil {
 
 <p>其中<code>writeMessageToBackend</code>函数重新初始化缓存，将<code>Message</code>类型的消息序列化到缓存中，最后将缓存写入<code>backend</code></p>
 
-<h1 id="topic消息循环:bcb97463d8dd6c9afc36421d8c54864f">Topic消息循环</h1>
+<h1 id="topic消息循环:efd667b960aa7ec362edb15e7af0b343">Topic消息循环</h1>
 
 <p><code>messagePump</code>函数负责Topic的消息循环，该函数在创建新的topic时通过<code>waitGroup</code>在新的goroutine中运行。</p>
 
@@ -633,7 +636,7 @@ if err != nil {
 <li>监听当前topic的删除</li>
 </ol>
 
-<h2 id="消息投递:bcb97463d8dd6c9afc36421d8c54864f">消息投递</h2>
+<h2 id="消息投递:efd667b960aa7ec362edb15e7af0b343">消息投递</h2>
 
 <pre><code class="language-go">case msg = &lt;-memoryMsgChan:
 case buf = &lt;-backendChan:
@@ -678,7 +681,7 @@ case buf = &lt;-backendChan:
 直接调用channel的<code>PutMessage</code>函数进行投递，对于延迟的消息，
 调用channel的<code>StartDeferredTimeout</code>函数进行投递。对于这两个函数的投递细节，后续博文中会详细分析。</p>
 
-<h2 id="topic下channel的更新:bcb97463d8dd6c9afc36421d8c54864f">Topic下Channel的更新</h2>
+<h2 id="topic下channel的更新:efd667b960aa7ec362edb15e7af0b343">Topic下Channel的更新</h2>
 
 <pre><code class="language-go">case &lt;-t.channelUpdateChan:
 	chans = chans[:0]
@@ -700,7 +703,7 @@ case buf = &lt;-backendChan:
 <p>Channel的更新比较简单，从<code>channelMap</code>中取出每个channel，构成channel的数组以便后续进行消息的投递。
 并且根据当前是否有channel以及该topic是否处于暂停状态来决定<code>memoryMsgChan</code>和<code>backendChan</code>是否为空。</p>
 
-<h2 id="topic的暂停和恢复:bcb97463d8dd6c9afc36421d8c54864f">Topic的暂停和恢复</h2>
+<h2 id="topic的暂停和恢复:efd667b960aa7ec362edb15e7af0b343">Topic的暂停和恢复</h2>
 
 <pre><code class="language-go">case pause := &lt;-t.pauseChan:
 	if pause || len(chans) == 0 {
@@ -716,7 +719,7 @@ case buf = &lt;-backendChan:
 <p>这个case既处理topic的暂停也处理topic的恢复，<code>pause</code>变量决定其究竟是哪一种操作。
 Topic的暂停和恢复其实和topic的更新很像，根据是否暂停以及是否有channel来决定是否分配<code>memoryMsgChan</code>和<code>backendChan</code>。</p>
 
-<h2 id="messagepump-函数的退出:bcb97463d8dd6c9afc36421d8c54864f"><code>messagePump</code>函数的退出</h2>
+<h2 id="messagepump-函数的退出:efd667b960aa7ec362edb15e7af0b343"><code>messagePump</code>函数的退出</h2>
 
 <pre><code class="language-go">case &lt;-t.exitChan:
 	goto exit
@@ -730,7 +733,7 @@ exit:
 
 <p><code>messagePump</code>通过监听<code>exitChan</code>来获知topic是否被删除，当topic的删除时，跳转到函数的最后，输出日志后退出消息循环。</p>
 
-<h1 id="topic的关闭和删除:bcb97463d8dd6c9afc36421d8c54864f">Topic的关闭和删除</h1>
+<h1 id="topic的关闭和删除:efd667b960aa7ec362edb15e7af0b343">Topic的关闭和删除</h1>
 
 <pre><code class="language-go">// Delete empties the topic and all its channels and closes
 func (t *Topic) Delete() error {
@@ -847,9 +850,9 @@ finish:
 
 <p>在删除topic时用到的<code>Empty</code>函数跟<code>flush</code>处理逻辑类似，只不过<code>Empty</code>只释放<code>memoryMsgChan</code>消息，而不保存它们。</p>
 
-<h1 id="其他函数:bcb97463d8dd6c9afc36421d8c54864f">其他函数</h1>
+<h1 id="其他函数:efd667b960aa7ec362edb15e7af0b343">其他函数</h1>
 
-<h2 id="depth-函数:bcb97463d8dd6c9afc36421d8c54864f"><code>Depth</code>函数</h2>
+<h2 id="depth-函数:efd667b960aa7ec362edb15e7af0b343"><code>Depth</code>函数</h2>
 
 <pre><code class="language-go">func (t *Topic) Depth() int64 {
 	return int64(len(t.memoryMsgChan)) + t.backend.Depth()
@@ -858,7 +861,7 @@ finish:
 
 <p><code>Depth</code>函数用于获取当前topic尚未投递的消息数，是<code>memoryMsgChan</code>缓冲区的长度加上<code>backend</code>里消息的个数。</p>
 
-<h2 id="pause-和-unpause-函数:bcb97463d8dd6c9afc36421d8c54864f"><code>Pause</code>和<code>UnPause</code>函数</h2>
+<h2 id="pause-和-unpause-函数:efd667b960aa7ec362edb15e7af0b343"><code>Pause</code>和<code>UnPause</code>函数</h2>
 
 <pre><code class="language-go">func (t *Topic) Pause() error {
 	return t.doPause(true)
@@ -892,11 +895,11 @@ func (t *Topic) IsPaused() bool {
 比如前面提到的<code>Close</code>和<code>Delete</code>。<code>Pause</code>和<code>UnPause</code>同样也使用这种方式，通过传递不同的参数调用<code>doPause</code>函数来执行不同操作。
 <code>doPause</code>设置<code>paused</code>标志并向<code>pauseChan</code>发送消息，随后由<code>messagePump</code>在消息循环中暂停topic。</p>
 
-<h2 id="aggregatechannele2eprocessinglatency-函数:bcb97463d8dd6c9afc36421d8c54864f"><code>AggregateChannelE2eProcessingLatency</code>函数</h2>
+<h2 id="aggregatechannele2eprocessinglatency-函数:efd667b960aa7ec362edb15e7af0b343"><code>AggregateChannelE2eProcessingLatency</code>函数</h2>
 
 <p>此函数用于性能统计，在<code>nsqd/statd.go</code>中调用，客户端可以通过HTTP的/stats API看到统计结果。具体细节将在后续博文分析。</p>
 
-<h2 id="与channel相关的函数:bcb97463d8dd6c9afc36421d8c54864f">与channel相关的函数</h2>
+<h2 id="与channel相关的函数:efd667b960aa7ec362edb15e7af0b343">与channel相关的函数</h2>
 
 <p><code>GetChannel</code>, <code>getOrCreateChannel</code>，<code>GetExistingChannel</code>, <code>DeleteExistingChannel</code>这些函数是与channel相关的函数，将在后续的博文中分析。</p>
 </div>
@@ -1019,14 +1022,14 @@ func (t *Topic) IsPaused() bool {
   }
   
   </style>
-	<div class="ds-thread" data-thread-key="/2015/11/25/nsqd_source_2_topics_and_channels/" data-title="nsq源码阅读笔记之nsqd（二）——Topic" data-url="http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics_and_channels/"></div>
+	<div class="ds-thread" data-thread-key="/2015/11/25/nsqd_source_2_topics/" data-title="nsq源码阅读笔记之nsqd（二）——Topic" data-url="http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics/"></div>
   
   </div>
 </div>
 </paper-item>
 <paper-item>
   
-    <paper-fab disabled icon="chevron-left"></paper-fab>
+    <a href="http://blog.123hurray.tk/2015/11/27/nsqd_source_4_channels/"><paper-fab icon="chevron-left"></paper-fab></a>
   
     <div class="flex"></div>
   

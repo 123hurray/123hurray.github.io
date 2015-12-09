@@ -7,20 +7,486 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Wed, 25 Nov 2015 16:09:44 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 27 Nov 2015 16:14:26 +0800</lastBuildDate>
     <atom:link href="http://blog.123hurray.tk/tags/nsqd/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
+      <title>nsq源码阅读笔记之nsqd（三）——diskQueue</title>
+      <link>http://blog.123hurray.tk/2015/11/27/nsqd_source_3_diskqueue/</link>
+      <pubDate>Fri, 27 Nov 2015 16:14:26 +0800</pubDate>
+      
+      <guid>http://blog.123hurray.tk/2015/11/27/nsqd_source_3_diskqueue/</guid>
+      <description>
+
+&lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;是&lt;code&gt;backendQueue&lt;/code&gt;接口的一个实现。&lt;code&gt;backendQueue&lt;/code&gt;的作用是在实现在内存go channel缓冲区满的情况下对消息的处理的对象。
+除了&lt;code&gt;diskQueue&lt;/code&gt;外还有&lt;code&gt;dummyBackendQueue&lt;/code&gt;实现了&lt;code&gt;backendQueue&lt;/code&gt;接口。&lt;/p&gt;
+
+&lt;p&gt;对于临时（#ephemeral结尾）Topic/Channel，在创建时会使用&lt;code&gt;dummyBackendQueue&lt;/code&gt;初始化&lt;code&gt;backend&lt;/code&gt;，
+&lt;code&gt;dummyBackendQueue&lt;/code&gt;只是为了统一临时和非临时Topic/Channel而写的，它只是实现了接口，不做任何实质上的操作，
+因此在内存缓冲区满时直接丢弃消息。这也是临时Topic/Channel和非临时的一个比较大的差别。
+每个非临时Topic/Channel，创建的时候使用&lt;code&gt;diskQueue&lt;/code&gt;初始化&lt;code&gt;backend&lt;/code&gt;，&lt;code&gt;diskQueue&lt;/code&gt;的功能是将消息写入磁盘进行持久化，
+并在需要时从中取出消息重新向客户端投递。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;的实现在&lt;code&gt;nsqd/disk_queue.go&lt;/code&gt;中。&lt;strong&gt;需要注意一点&lt;/strong&gt;，查找&lt;code&gt;diskQueue&lt;/code&gt;中的函数的调用可能不会返回正确的结果，
+因为&lt;code&gt;diskQueue&lt;/code&gt;对外是以&lt;code&gt;backendQueue&lt;/code&gt;形式存在，因此查找&lt;code&gt;diskQueue&lt;/code&gt;的函数的调用情况时应当查找&lt;code&gt;backendQueue&lt;/code&gt;中相应函数的调用。&lt;/p&gt;
+
+&lt;h1 id=&#34;diskqueue-的创建和初始化:944b75e8330a31bfc7882b7e80bb7fb5&#34;&gt;&lt;code&gt;diskQueue&lt;/code&gt;的创建和初始化&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// newDiskQueue instantiates a new instance of diskQueue, retrieving metadata
+// from the filesystem and starting the read ahead goroutine
+func newDiskQueue(name string, dataPath string, maxBytesPerFile int64,
+	minMsgSize int32, maxMsgSize int32,
+	syncEvery int64, syncTimeout time.Duration,
+	logger logger) BackendQueue {
+	d := diskQueue{
+		name:              name,
+		dataPath:          dataPath,
+		maxBytesPerFile:   maxBytesPerFile,
+		minMsgSize:        minMsgSize,
+		maxMsgSize:        maxMsgSize,
+		readChan:          make(chan []byte),
+		writeChan:         make(chan []byte),
+		writeResponseChan: make(chan error),
+		emptyChan:         make(chan int),
+		emptyResponseChan: make(chan error),
+		exitChan:          make(chan int),
+		exitSyncChan:      make(chan int),
+		syncEvery:         syncEvery,
+		syncTimeout:       syncTimeout,
+		logger:            logger,
+	}
+
+	// no need to lock here, nothing else could possibly be touching this instance
+	err := d.retrieveMetaData()
+	if err != nil &amp;amp;&amp;amp; !os.IsNotExist(err) {
+		d.logf(&amp;quot;ERROR: diskqueue(%s) failed to retrieveMetaData - %s&amp;quot;, d.name, err)
+	}
+
+	go d.ioLoop()
+
+	return &amp;amp;d
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;的获得是通过&lt;code&gt;newDiskQueue&lt;/code&gt;，该函数比较简单，通过传入的参数创建一个&lt;code&gt;dispQueue&lt;/code&gt;，
+然后通过&lt;code&gt;retrieveMetaData&lt;/code&gt;函数获取之前与该&lt;code&gt;diskQueue&lt;/code&gt;相关联的Topic/Channel已经持久化的信息。最后启动&lt;code&gt;ioLoop&lt;/code&gt;循环处理消息。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// retrieveMetaData initializes state from the filesystem
+func (d *diskQueue) retrieveMetaData() error {
+	var f *os.File
+	var err error
+
+	fileName := d.metaDataFileName()
+	f, err = os.OpenFile(fileName, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var depth int64
+	_, err = fmt.Fscanf(f, &amp;quot;%d\n%d,%d\n%d,%d\n&amp;quot;,
+		&amp;amp;depth,
+		&amp;amp;d.readFileNum, &amp;amp;d.readPos,
+		&amp;amp;d.writeFileNum, &amp;amp;d.writePos)
+	if err != nil {
+		return err
+	}
+	atomic.StoreInt64(&amp;amp;d.depth, depth)
+	d.nextReadFileNum = d.readFileNum
+	d.nextReadPos = d.readPos
+
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;retrieveMetaData&lt;/code&gt;函数从磁盘中恢复&lt;code&gt;diskQueue&lt;/code&gt;的状态。&lt;code&gt;diskQueue&lt;/code&gt;会定时将自己的状态备份到文件中，
+文件名由&lt;code&gt;metaDataFileName&lt;/code&gt;函数确定。&lt;code&gt;retrieveMetaData&lt;/code&gt;函数同样通过&lt;code&gt;metaDataFileName&lt;/code&gt;函数获得保存状态的文件名并打开。
+该文件只有三行，格式为&lt;code&gt;%d\n%d,%d\n%d,%d\n&lt;/code&gt;，第一行保存着该&lt;code&gt;diskQueue&lt;/code&gt;中消息的数量（&lt;code&gt;depth&lt;/code&gt;），
+第二行保存&lt;code&gt;readFileNum&lt;/code&gt;和&lt;code&gt;readPos&lt;/code&gt;，第三行保存&lt;code&gt;writeFileNum&lt;/code&gt;和&lt;code&gt;writePos&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;这里不太理解的一个地方是&lt;code&gt;d.depth&lt;/code&gt;通过一个临时变量去获取然后通过&lt;code&gt;atomic.StoreInt64&lt;/code&gt;保存。个人觉得没有必要这么做。
+当然作者在&lt;a href=&#34;https://github.com/nsqio/nsq/pull/203#discussion-diff-4280536&#34;&gt;nsqd: diskqueue corruption and depth accounting&lt;/a&gt;这个Pull Request中也提到：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;I dont believe that this should be strictly necessary because &lt;code&gt;retrieveMetaData&lt;/code&gt; is only ever called in &lt;code&gt;NewDiskQueue&lt;/code&gt; and the &lt;code&gt;ioLoop&lt;/code&gt; goroutine is launched after that call (which according to the go memory model is safe).&lt;/p&gt;
+
+&lt;p&gt;However, I&amp;rsquo;m not 100% sure about interactions between the go memory model, go-routines, and the combined use of atomic and non-atomic operations (which is what this was relying on before this change&amp;hellip; i.e. this was the only mutation of &lt;code&gt;d.depth&lt;/code&gt; that was &lt;strong&gt;not&lt;/strong&gt; using atomic ops).&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;因此，这只是个比较保险的做法，并不一定意味着直接保存到&lt;code&gt;d.depth&lt;/code&gt;就不安全。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+// persistMetaData atomically writes state to the filesystem
+func (d *diskQueue) persistMetaData() error {
+	var f *os.File
+	var err error
+
+	fileName := d.metaDataFileName()
+	tmpFileName := fmt.Sprintf(&amp;quot;%s.%d.tmp&amp;quot;, fileName, rand.Int())
+
+	// write to tmp file
+	f, err = os.OpenFile(tmpFileName, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintf(f, &amp;quot;%d\n%d,%d\n%d,%d\n&amp;quot;,
+		atomic.LoadInt64(&amp;amp;d.depth),
+		d.readFileNum, d.readPos,
+		d.writeFileNum, d.writePos)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	f.Sync()
+	f.Close()
+
+	// atomically rename
+	return atomicRename(tmpFileName, fileName)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;与&lt;code&gt;retrieveMetaData&lt;/code&gt;相对应的是&lt;code&gt;persistMetaData&lt;/code&gt;函数，这个函数将运行时的元数据保存到文件用于下次重新构建&lt;code&gt;diskQueue&lt;/code&gt;时的恢复。
+逻辑基本与&lt;code&gt;retrieveMetaData&lt;/code&gt;，此处不再赘述。&lt;/p&gt;
+
+&lt;h1 id=&#34;diskqueue-的消息循环:944b75e8330a31bfc7882b7e80bb7fb5&#34;&gt;&lt;code&gt;diskQueue&lt;/code&gt;的消息循环&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// ioLoop provides the backend for exposing a go channel (via ReadChan())
+// in support of multiple concurrent queue consumers
+//
+// it works by looping and branching based on whether or not the queue has data
+// to read and blocking until data is either read or written over the appropriate
+// go channels
+//
+// conveniently this also means that we&#39;re asynchronously reading from the filesystem
+func (d *diskQueue) ioLoop() {
+	var dataRead []byte
+	var err error
+	var count int64
+	var r chan []byte
+
+	syncTicker := time.NewTicker(d.syncTimeout)
+
+	for {
+		// dont sync all the time :)
+		if count == d.syncEvery {
+			count = 0
+			d.needSync = true
+		}
+
+		if d.needSync {
+			err = d.sync()
+			if err != nil {
+				d.logf(&amp;quot;ERROR: diskqueue(%s) failed to sync - %s&amp;quot;, d.name, err)
+			}
+		}
+
+		if (d.readFileNum &amp;lt; d.writeFileNum) || (d.readPos &amp;lt; d.writePos) {
+			if d.nextReadPos == d.readPos {
+				dataRead, err = d.readOne()
+				if err != nil {
+					d.logf(&amp;quot;ERROR: reading from diskqueue(%s) at %d of %s - %s&amp;quot;,
+						d.name, d.readPos, d.fileName(d.readFileNum), err)
+					d.handleReadError()
+					continue
+				}
+			}
+			r = d.readChan
+		} else {
+			r = nil
+		}
+
+		select {
+		// the Go channel spec dictates that nil channel operations (read or write)
+		// in a select are skipped, we set r to d.readChan only when there is data to read
+		case r &amp;lt;- dataRead:
+			// moveForward sets needSync flag if a file is removed
+			d.moveForward()
+		case &amp;lt;-d.emptyChan:
+			d.emptyResponseChan &amp;lt;- d.deleteAllFiles()
+			count = 0
+		case dataWrite := &amp;lt;-d.writeChan:
+			count++
+			d.writeResponseChan &amp;lt;- d.writeOne(dataWrite)
+		case &amp;lt;-syncTicker.C:
+			if count &amp;gt; 0 {
+				count = 0
+				d.needSync = true
+			}
+		case &amp;lt;-d.exitChan:
+			goto exit
+		}
+	}
+
+exit:
+	d.logf(&amp;quot;DISKQUEUE(%s): closing ... ioLoop&amp;quot;, d.name)
+	syncTicker.Stop()
+	d.exitSyncChan &amp;lt;- 1
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;ioLoop&lt;/code&gt;函数实现了&lt;code&gt;diskQueue&lt;/code&gt;的消息循环，&lt;code&gt;diskQueue&lt;/code&gt;的定时操作和读写操作的核心都在这个函数中完成。&lt;/p&gt;
+
+&lt;p&gt;函数首先使用&lt;code&gt;time.NewTicker(d.syncTimeout)&lt;/code&gt;定义了&lt;code&gt;syncTicker&lt;/code&gt;变量，&lt;code&gt;syncTicker&lt;/code&gt;的类型是&lt;code&gt;time.Ticker&lt;/code&gt;，
+每隔&lt;code&gt;d.syncTimeout&lt;/code&gt;时间就会在&lt;code&gt;syncTicker.C&lt;/code&gt;这个go channel产生一个消息。
+通过select &lt;code&gt;syncTicker.C&lt;/code&gt;能实现至多&lt;code&gt;d.syncTimeout&lt;/code&gt;时间就跳出select块一次，这种方式相当于一个延时的&lt;code&gt;default&lt;/code&gt;子句。
+在&lt;code&gt;ioLoop&lt;/code&gt;中，通过这种方式，就能在一个goroutine中既实现消息的接收又实现定时任务（跳出select后执行定时任务，然后在进入select）。
+有点类似于定时的轮询。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;ioLoop&lt;/code&gt;的定时任务是调用&lt;code&gt;sync&lt;/code&gt;函数刷新文件，防止突然结束程序后内存中的内容未被提交到磁盘，导致内容丢失。
+控制是否需要同步的变量是&lt;code&gt;d.needSync&lt;/code&gt;，该变量在一次&lt;code&gt;sync&lt;/code&gt;后会被置为&lt;code&gt;false&lt;/code&gt;，在许多需要刷新文件的地方会被置为&lt;code&gt;true&lt;/code&gt;。
+在&lt;code&gt;ioLoop&lt;/code&gt;中，&lt;code&gt;d.needSync&lt;/code&gt;变量还跟刷新计数器&lt;code&gt;count&lt;/code&gt;变量有关，&lt;code&gt;count&lt;/code&gt;值的变化规则如下：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;如果一次消息循环中，有写入操作，那么&lt;code&gt;count&lt;/code&gt;就会被自增。&lt;/li&gt;
+&lt;li&gt;当&lt;code&gt;count&lt;/code&gt;达到&lt;code&gt;d.syncEvery&lt;/code&gt;时，会将&lt;code&gt;count&lt;/code&gt;重置为0并且将&lt;code&gt;d.needSync&lt;/code&gt;置为&lt;code&gt;true&lt;/code&gt;，随后进行文件的刷新。&lt;/li&gt;
+&lt;li&gt;在&lt;code&gt;emptyChan&lt;/code&gt;收到消息时，&lt;code&gt;count&lt;/code&gt;会被重置为0，因为文件已经被删除了，所有要重置刷新计数器。&lt;/li&gt;
+&lt;li&gt;在&lt;code&gt;syncTicker.C&lt;/code&gt;收到消息后，会将&lt;code&gt;count&lt;/code&gt;重置为0，并且将&lt;code&gt;d.needSync&lt;/code&gt;置为&lt;code&gt;true&lt;/code&gt;。也就是至多&lt;code&gt;d.syncTimeout&lt;/code&gt;时间刷新一次文件。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;code&gt;ioLoop&lt;/code&gt;还定时检测当前是否有数据需要被读取，如果&lt;code&gt;(d.readFileNum &amp;lt; d.writeFileNum) || (d.readPos &amp;lt; d.writePos)&lt;/code&gt;
+和`&lt;code&gt;d.nextReadPos == d.readPos&lt;/code&gt;这两个条件成立，则执行&lt;code&gt;d.readOne()&lt;/code&gt;并将结果放入&lt;code&gt;dataRead&lt;/code&gt;中，然后设置&lt;code&gt;r&lt;/code&gt;为&lt;code&gt;d.readChan&lt;/code&gt;。
+如果条件不成立，则将&lt;code&gt;r&lt;/code&gt;置为空值&lt;code&gt;nil&lt;/code&gt;。随后的select语句中有&lt;code&gt;case r &amp;lt;- dataRead:&lt;/code&gt;这样一个分支，在注释中作者写了这是一个Golang的特性，
+即：如果&lt;code&gt;r&lt;/code&gt;不为空，则会将&lt;code&gt;dataRead&lt;/code&gt;送入go channel。进入&lt;code&gt;d.readChan&lt;/code&gt;的消息通过&lt;code&gt;ReadChan&lt;/code&gt;函数向外暴露，最终被Topic/Channel的消息循环读取。
+而如果&lt;code&gt;r&lt;/code&gt;为空，则这个分支会被跳过。这个特性的使用统一了select的逻辑，简化了当数据为空时的判断。&lt;/p&gt;
+
+&lt;h1 id=&#34;diskqueue-的写操作:944b75e8330a31bfc7882b7e80bb7fb5&#34;&gt;&lt;code&gt;diskQueue&lt;/code&gt;的写操作&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// Put writes a []byte to the queue
+func (d *diskQueue) Put(data []byte) error {
+	d.RLock()
+	defer d.RUnlock()
+
+	if d.exitFlag == 1 {
+		return errors.New(&amp;quot;exiting&amp;quot;)
+	}
+
+	d.writeChan &amp;lt;- data
+	return &amp;lt;-d.writeResponseChan
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;写操作的对外接口是&lt;code&gt;Put&lt;/code&gt;函数，该函数比较简单，加锁，并且将数据放入&lt;code&gt;d.writeChan&lt;/code&gt;，等待&lt;code&gt;d.writeResponseChan&lt;/code&gt;的结果后返回。
+&lt;code&gt;d.writeChan&lt;/code&gt;的接收在&lt;code&gt;ioLoop&lt;/code&gt;中select的一个分支，处理时调用&lt;code&gt;writeOne&lt;/code&gt;函数，并将处理结果放入&lt;code&gt;d.writeResponseChan&lt;/code&gt;。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// writeOne performs a low level filesystem write for a single []byte
+// while advancing write positions and rolling files, if necessary
+func (d *diskQueue) writeOne(data []byte) error {
+	var err error
+
+	if d.writeFile == nil {
+		curFileName := d.fileName(d.writeFileNum)
+		d.writeFile, err = os.OpenFile(curFileName, os.O_RDWR|os.O_CREATE, 0600)
+		if err != nil {
+			return err
+		}
+
+		d.logf(&amp;quot;DISKQUEUE(%s): writeOne() opened %s&amp;quot;, d.name, curFileName)
+
+		if d.writePos &amp;gt; 0 {
+			_, err = d.writeFile.Seek(d.writePos, 0)
+			if err != nil {
+				d.writeFile.Close()
+				d.writeFile = nil
+				return err
+			}
+		}
+	}
+
+	dataLen := int32(len(data))
+
+	if dataLen &amp;lt; d.minMsgSize || dataLen &amp;gt; d.maxMsgSize {
+		return fmt.Errorf(&amp;quot;invalid message write size (%d) maxMsgSize=%d&amp;quot;, dataLen, d.maxMsgSize)
+	}
+
+	d.writeBuf.Reset()
+	err = binary.Write(&amp;amp;d.writeBuf, binary.BigEndian, dataLen)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.writeBuf.Write(data)
+	if err != nil {
+		return err
+	}
+
+	// only write to the file once
+	_, err = d.writeFile.Write(d.writeBuf.Bytes())
+	if err != nil {
+		d.writeFile.Close()
+		d.writeFile = nil
+		return err
+	}
+
+	totalBytes := int64(4 + dataLen)
+	d.writePos += totalBytes
+	atomic.AddInt64(&amp;amp;d.depth, 1)
+
+	if d.writePos &amp;gt; d.maxBytesPerFile {
+		d.writeFileNum++
+		d.writePos = 0
+
+		// sync every time we start writing to a new file
+		err = d.sync()
+		if err != nil {
+			d.logf(&amp;quot;ERROR: diskqueue(%s) failed to sync - %s&amp;quot;, d.name, err)
+		}
+
+		if d.writeFile != nil {
+			d.writeFile.Close()
+			d.writeFile = nil
+		}
+	}
+
+	return err
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;writeOne&lt;/code&gt;函数是写操作的最终执行部分，负责将消息写入磁盘。函数逻辑比较简单。消息写入步骤如下：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;若当前要写的文件不存在，则通过&lt;code&gt;d.fileName(d.writeFileNum)&lt;/code&gt;获得文件名，并创建文件&lt;/li&gt;
+&lt;li&gt;根据&lt;code&gt;d.writePos&lt;/code&gt;定位本次写的位置&lt;/li&gt;
+&lt;li&gt;从要写入的内容得到要写入的长度&lt;/li&gt;
+&lt;li&gt;先写入3中计算出的消息长度（4字节），然后写入消息本身&lt;/li&gt;
+&lt;li&gt;将&lt;code&gt;d.writePos&lt;/code&gt;后移&lt;code&gt;4 + 消息长度&lt;/code&gt;作为下次写入位置。加4是因为消息长度本身也占4字节。&lt;/li&gt;
+&lt;li&gt;判断&lt;code&gt;d.writePos&lt;/code&gt;是否大于每个文件的最大字节数&lt;code&gt;d.maxBytesPerFile&lt;/code&gt;，如果是，则将&lt;code&gt;d.writeFileNum&lt;/code&gt;加1，
+并重置&lt;code&gt;d.writePos&lt;/code&gt;。这个操作的目的是为了防止单个文件过大。&lt;/li&gt;
+&lt;li&gt;如果下次要写入新的文件，那么需要调用&lt;code&gt;sync&lt;/code&gt;函数对当前文件进行同步。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&#34;diskqueue-的读操作:944b75e8330a31bfc7882b7e80bb7fb5&#34;&gt;&lt;code&gt;diskQueue&lt;/code&gt;的读操作&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// readOne performs a low level filesystem read for a single []byte
+// while advancing read positions and rolling files, if necessary
+func (d *diskQueue) readOne() ([]byte, error) {
+	var err error
+	var msgSize int32
+
+	if d.readFile == nil {
+		curFileName := d.fileName(d.readFileNum)
+		d.readFile, err = os.OpenFile(curFileName, os.O_RDONLY, 0600)
+		if err != nil {
+			return nil, err
+		}
+
+		d.logf(&amp;quot;DISKQUEUE(%s): readOne() opened %s&amp;quot;, d.name, curFileName)
+
+		if d.readPos &amp;gt; 0 {
+			_, err = d.readFile.Seek(d.readPos, 0)
+			if err != nil {
+				d.readFile.Close()
+				d.readFile = nil
+				return nil, err
+			}
+		}
+
+		d.reader = bufio.NewReader(d.readFile)
+	}
+
+	err = binary.Read(d.reader, binary.BigEndian, &amp;amp;msgSize)
+	if err != nil {
+		d.readFile.Close()
+		d.readFile = nil
+		return nil, err
+	}
+
+	if msgSize &amp;lt; d.minMsgSize || msgSize &amp;gt; d.maxMsgSize {
+		// this file is corrupt and we have no reasonable guarantee on
+		// where a new message should begin
+		d.readFile.Close()
+		d.readFile = nil
+		return nil, fmt.Errorf(&amp;quot;invalid message read size (%d)&amp;quot;, msgSize)
+	}
+
+	readBuf := make([]byte, msgSize)
+	_, err = io.ReadFull(d.reader, readBuf)
+	if err != nil {
+		d.readFile.Close()
+		d.readFile = nil
+		return nil, err
+	}
+
+	totalBytes := int64(4 + msgSize)
+
+	// we only advance next* because we have not yet sent this to consumers
+	// (where readFileNum, readPos will actually be advanced)
+	d.nextReadPos = d.readPos + totalBytes
+	d.nextReadFileNum = d.readFileNum
+
+	// TODO: each data file should embed the maxBytesPerFile
+	// as the first 8 bytes (at creation time) ensuring that
+	// the value can change without affecting runtime
+	if d.nextReadPos &amp;gt; d.maxBytesPerFile {
+		if d.readFile != nil {
+			d.readFile.Close()
+			d.readFile = nil
+		}
+
+		d.nextReadFileNum++
+		d.nextReadPos = 0
+	}
+
+	return readBuf, nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;消息读取对外暴露的是一个go channel，而数据的最终来源是&lt;code&gt;ioLoop&lt;/code&gt;中调用的&lt;code&gt;readOne&lt;/code&gt;函数。&lt;code&gt;readOne&lt;/code&gt;函数逻辑跟&lt;code&gt;writeOne&lt;/code&gt;类似，
+只是把写操作换成了读操作，唯一差异较大的地方是&lt;code&gt;d.nextReadPos&lt;/code&gt;和&lt;code&gt;d.nextReadFileNum&lt;/code&gt;这两个变量的使用。&lt;/p&gt;
+
+&lt;p&gt;在写操作时，如果写入成功，则可以直接将写入位置和写入文件更新。但是对于读操作来说，由于读取的目的是为了向客户端投递，
+因此无法保证一定能投递成功。因此需要使用next开头的两个变量来保存成功后需要读的位置，如果投递没有成功，
+则继续使用当前的读取位置将再一次尝试将消息投递给客户端。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (d *diskQueue) moveForward() {
+	oldReadFileNum := d.readFileNum
+	d.readFileNum = d.nextReadFileNum
+	d.readPos = d.nextReadPos
+	depth := atomic.AddInt64(&amp;amp;d.depth, -1)
+
+	// see if we need to clean up the old file
+	if oldReadFileNum != d.nextReadFileNum {
+		// sync every time we start reading from a new file
+		d.needSync = true
+
+		fn := d.fileName(oldReadFileNum)
+		err := os.Remove(fn)
+		if err != nil {
+			d.logf(&amp;quot;ERROR: failed to Remove(%s) - %s&amp;quot;, fn, err)
+		}
+	}
+
+	d.checkTailCorruption(depth)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;当消息投递成功后，则使用&lt;code&gt;moveForward&lt;/code&gt;函数将保存在&lt;code&gt;d.nextReadPos&lt;/code&gt;和&lt;code&gt;d.nextReadFileNum&lt;/code&gt;中的值取出，
+赋值给&lt;code&gt;d.readPos&lt;/code&gt;和&lt;code&gt;d.readFileNum&lt;/code&gt;，&lt;code&gt;moveForward&lt;/code&gt;函数还负责清理已经读完的旧文件。最后，调用&lt;code&gt;checkTailCorruption&lt;/code&gt;函数检查文件是否有错，
+如果出现错误，则调用&lt;code&gt;skipToNextRWFile&lt;/code&gt;重置读取和写入的文件编号和位置。&lt;/p&gt;
+
+&lt;h1 id=&#34;diskqueue-中的其他函数:944b75e8330a31bfc7882b7e80bb7fb5&#34;&gt;&lt;code&gt;diskQueue&lt;/code&gt;中的其他函数&lt;/h1&gt;
+
+&lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;中还有与错误处理相关的&lt;code&gt;handleReadError&lt;/code&gt;，与关闭&lt;code&gt;diskQueue&lt;/code&gt;相关的&lt;code&gt;Close&lt;/code&gt;，&lt;code&gt;Delete&lt;/code&gt;，&lt;code&gt;exit&lt;/code&gt;，&lt;code&gt;Empty&lt;/code&gt;和&lt;code&gt;deleteAllFiles&lt;/code&gt;等，
+函数，逻辑较简单，不再专门分析。&lt;/p&gt;
+
+&lt;h1 id=&#34;diskqueue-总结:944b75e8330a31bfc7882b7e80bb7fb5&#34;&gt;&lt;code&gt;diskQueue&lt;/code&gt;总结&lt;/h1&gt;
+
+&lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;主要逻辑是对磁盘的读写操作，较为琐碎但没有复杂的架构。
+其中消息循环的思路和读写过程周全的考虑都值得学习的。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
       <title>nsq源码阅读笔记之nsqd（二）——Topic</title>
-      <link>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics_and_channels/</link>
+      <link>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics/</link>
       <pubDate>Wed, 25 Nov 2015 16:09:44 +0800</pubDate>
       
-      <guid>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics_and_channels/</guid>
+      <guid>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics/</guid>
       <description>
 
 &lt;p&gt;与&lt;strong&gt;Topic&lt;/strong&gt;相关的代码主要位于&lt;code&gt;nsqd/nsqd.go&lt;/code&gt;, &lt;code&gt;nsqd/topic.go&lt;/code&gt;中。&lt;/p&gt;
 
-&lt;h1 id=&#34;topic的获取:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的获取&lt;/h1&gt;
+&lt;h1 id=&#34;topic的获取:efd667b960aa7ec362edb15e7af0b343&#34;&gt;Topic的获取&lt;/h1&gt;
 
 &lt;p&gt;Topic通过&lt;code&gt;GetTopic&lt;/code&gt;函数获取&lt;/p&gt;
 
@@ -171,7 +637,7 @@ Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。&lt
 &lt;p&gt;示例说明了可以通过对exitChan的使用来结束对阻塞go channel的等待。需要说明的是，在真实场景中，
 消费者在发出结束的意图后可能并不会去处理尚未被处理的消息，所以像示例中的Task1是无法正常结束的。&lt;/p&gt;
 
-&lt;h1 id=&#34;topic的创建:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的创建&lt;/h1&gt;
+&lt;h1 id=&#34;topic的创建:efd667b960aa7ec362edb15e7af0b343&#34;&gt;Topic的创建&lt;/h1&gt;
 
 &lt;p&gt;当&lt;code&gt;GetTopic&lt;/code&gt;未在已存在的topic中找到指定topic时，就会使用&lt;code&gt;NewTopic&lt;/code&gt;函数新建一个&lt;code&gt;Topic&lt;/code&gt;对象。
 &lt;code&gt;Topic&lt;/code&gt;和&lt;code&gt;NewTopic&lt;/code&gt;都位于&lt;code&gt;nsqd/topic.go&lt;/code&gt;中。&lt;/p&gt;
@@ -254,7 +720,7 @@ Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。&lt
 &lt;p&gt;在执行持久化之前，&lt;code&gt;case n.notifyChan &amp;lt;- v:&lt;/code&gt;语句向&lt;code&gt;notifyChan&lt;/code&gt;传递消息，触发&lt;code&gt;lookupLoop&lt;/code&gt;函数（&lt;code&gt;nsqd/lookup.go&lt;/code&gt;中）接收&lt;code&gt;notifyChan&lt;/code&gt;消息的部分，
 从而实现向&lt;code&gt;loopupd&lt;/code&gt;注册/取消注册响应的topic或channel。&lt;/p&gt;
 
-&lt;h1 id=&#34;消息进入topic:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;消息进入topic&lt;/h1&gt;
+&lt;h1 id=&#34;消息进入topic:efd667b960aa7ec362edb15e7af0b343&#34;&gt;消息进入topic&lt;/h1&gt;
 
 &lt;p&gt;客户端通过nsqd的HTTP API或TCP API向特定topic发送消息，nsqd的HTTP或TCP模块通过调用对应topic的&lt;code&gt;PutMessage&lt;/code&gt;或&lt;code&gt;PutMessages&lt;/code&gt;函数，
 将消息投递到topic中。&lt;code&gt;PutMessage&lt;/code&gt;或&lt;code&gt;PutMessages&lt;/code&gt;函数都通过topic的私有函数&lt;code&gt;put&lt;/code&gt;进行消息的投递，两个函数的区别仅在&lt;code&gt;PutMessage&lt;/code&gt;只调用一次&lt;code&gt;put&lt;/code&gt;，
@@ -270,7 +736,7 @@ Task1和Task2的区别是Task2在select中多了一个对exitChan的监听。&lt
 }
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;带缓冲的go-channel的特性:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;带缓冲的Go channel的特性&lt;/h2&gt;
+&lt;h2 id=&#34;带缓冲的go-channel的特性:efd667b960aa7ec362edb15e7af0b343&#34;&gt;带缓冲的Go channel的特性&lt;/h2&gt;
 
 &lt;p&gt;&lt;code&gt;put&lt;/code&gt;函数使用了一个带缓冲的go channel的特性：如果case里的go channel阻塞了，那么就会跳过该case语句，执行default分支。即，如果当前&lt;code&gt;memoryMsgChan&lt;/code&gt;还有足够缓冲空间，
 则消息被投入&lt;code&gt;memoryMsgChan&lt;/code&gt;，如果当前&lt;code&gt;memoryMsgChan&lt;/code&gt;的缓冲区已满，则将执行default分支，从而将消息保存到&lt;code&gt;backend&lt;/code&gt;中。&lt;/p&gt;
@@ -337,7 +803,7 @@ Worker1 receive  Task 3
 因此当消费者向&lt;code&gt;workerChan&lt;/code&gt;发送第4个消息的时候会被阻塞，从运行结果看，没有消息被投向&lt;code&gt;worker2Chan&lt;/code&gt;，
 程序在遇到阻塞时进入了default分支，打印出&lt;code&gt;Channel queue full&lt;/code&gt;。特定场景下合理使用这一特性能够大幅减少程序的复杂度。&lt;/p&gt;
 
-&lt;h2 id=&#34;put-函数对消息的持久化:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;put&lt;/code&gt;函数对消息的持久化&lt;/h2&gt;
+&lt;h2 id=&#34;put-函数对消息的持久化:efd667b960aa7ec362edb15e7af0b343&#34;&gt;&lt;code&gt;put&lt;/code&gt;函数对消息的持久化&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;b := bufferPoolGet()
 err := writeMessageToBackend(b, m, t.backend)
@@ -374,7 +840,7 @@ if err != nil {
 
 &lt;p&gt;其中&lt;code&gt;writeMessageToBackend&lt;/code&gt;函数重新初始化缓存，将&lt;code&gt;Message&lt;/code&gt;类型的消息序列化到缓存中，最后将缓存写入&lt;code&gt;backend&lt;/code&gt;&lt;/p&gt;
 
-&lt;h1 id=&#34;topic消息循环:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic消息循环&lt;/h1&gt;
+&lt;h1 id=&#34;topic消息循环:efd667b960aa7ec362edb15e7af0b343&#34;&gt;Topic消息循环&lt;/h1&gt;
 
 &lt;p&gt;&lt;code&gt;messagePump&lt;/code&gt;函数负责Topic的消息循环，该函数在创建新的topic时通过&lt;code&gt;waitGroup&lt;/code&gt;在新的goroutine中运行。&lt;/p&gt;
 
@@ -388,7 +854,7 @@ if err != nil {
 &lt;li&gt;监听当前topic的删除&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;h2 id=&#34;消息投递:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;消息投递&lt;/h2&gt;
+&lt;h2 id=&#34;消息投递:efd667b960aa7ec362edb15e7af0b343&#34;&gt;消息投递&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case msg = &amp;lt;-memoryMsgChan:
 case buf = &amp;lt;-backendChan:
@@ -433,7 +899,7 @@ case buf = &amp;lt;-backendChan:
 直接调用channel的&lt;code&gt;PutMessage&lt;/code&gt;函数进行投递，对于延迟的消息，
 调用channel的&lt;code&gt;StartDeferredTimeout&lt;/code&gt;函数进行投递。对于这两个函数的投递细节，后续博文中会详细分析。&lt;/p&gt;
 
-&lt;h2 id=&#34;topic下channel的更新:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic下Channel的更新&lt;/h2&gt;
+&lt;h2 id=&#34;topic下channel的更新:efd667b960aa7ec362edb15e7af0b343&#34;&gt;Topic下Channel的更新&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case &amp;lt;-t.channelUpdateChan:
 	chans = chans[:0]
@@ -455,7 +921,7 @@ case buf = &amp;lt;-backendChan:
 &lt;p&gt;Channel的更新比较简单，从&lt;code&gt;channelMap&lt;/code&gt;中取出每个channel，构成channel的数组以便后续进行消息的投递。
 并且根据当前是否有channel以及该topic是否处于暂停状态来决定&lt;code&gt;memoryMsgChan&lt;/code&gt;和&lt;code&gt;backendChan&lt;/code&gt;是否为空。&lt;/p&gt;
 
-&lt;h2 id=&#34;topic的暂停和恢复:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的暂停和恢复&lt;/h2&gt;
+&lt;h2 id=&#34;topic的暂停和恢复:efd667b960aa7ec362edb15e7af0b343&#34;&gt;Topic的暂停和恢复&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case pause := &amp;lt;-t.pauseChan:
 	if pause || len(chans) == 0 {
@@ -471,7 +937,7 @@ case buf = &amp;lt;-backendChan:
 &lt;p&gt;这个case既处理topic的暂停也处理topic的恢复，&lt;code&gt;pause&lt;/code&gt;变量决定其究竟是哪一种操作。
 Topic的暂停和恢复其实和topic的更新很像，根据是否暂停以及是否有channel来决定是否分配&lt;code&gt;memoryMsgChan&lt;/code&gt;和&lt;code&gt;backendChan&lt;/code&gt;。&lt;/p&gt;
 
-&lt;h2 id=&#34;messagepump-函数的退出:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;messagePump&lt;/code&gt;函数的退出&lt;/h2&gt;
+&lt;h2 id=&#34;messagepump-函数的退出:efd667b960aa7ec362edb15e7af0b343&#34;&gt;&lt;code&gt;messagePump&lt;/code&gt;函数的退出&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;case &amp;lt;-t.exitChan:
 	goto exit
@@ -485,7 +951,7 @@ exit:
 
 &lt;p&gt;&lt;code&gt;messagePump&lt;/code&gt;通过监听&lt;code&gt;exitChan&lt;/code&gt;来获知topic是否被删除，当topic的删除时，跳转到函数的最后，输出日志后退出消息循环。&lt;/p&gt;
 
-&lt;h1 id=&#34;topic的关闭和删除:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;Topic的关闭和删除&lt;/h1&gt;
+&lt;h1 id=&#34;topic的关闭和删除:efd667b960aa7ec362edb15e7af0b343&#34;&gt;Topic的关闭和删除&lt;/h1&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// Delete empties the topic and all its channels and closes
 func (t *Topic) Delete() error {
@@ -602,9 +1068,9 @@ finish:
 
 &lt;p&gt;在删除topic时用到的&lt;code&gt;Empty&lt;/code&gt;函数跟&lt;code&gt;flush&lt;/code&gt;处理逻辑类似，只不过&lt;code&gt;Empty&lt;/code&gt;只释放&lt;code&gt;memoryMsgChan&lt;/code&gt;消息，而不保存它们。&lt;/p&gt;
 
-&lt;h1 id=&#34;其他函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;其他函数&lt;/h1&gt;
+&lt;h1 id=&#34;其他函数:efd667b960aa7ec362edb15e7af0b343&#34;&gt;其他函数&lt;/h1&gt;
 
-&lt;h2 id=&#34;depth-函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;Depth&lt;/code&gt;函数&lt;/h2&gt;
+&lt;h2 id=&#34;depth-函数:efd667b960aa7ec362edb15e7af0b343&#34;&gt;&lt;code&gt;Depth&lt;/code&gt;函数&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) Depth() int64 {
 	return int64(len(t.memoryMsgChan)) + t.backend.Depth()
@@ -613,7 +1079,7 @@ finish:
 
 &lt;p&gt;&lt;code&gt;Depth&lt;/code&gt;函数用于获取当前topic尚未投递的消息数，是&lt;code&gt;memoryMsgChan&lt;/code&gt;缓冲区的长度加上&lt;code&gt;backend&lt;/code&gt;里消息的个数。&lt;/p&gt;
 
-&lt;h2 id=&#34;pause-和-unpause-函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;Pause&lt;/code&gt;和&lt;code&gt;UnPause&lt;/code&gt;函数&lt;/h2&gt;
+&lt;h2 id=&#34;pause-和-unpause-函数:efd667b960aa7ec362edb15e7af0b343&#34;&gt;&lt;code&gt;Pause&lt;/code&gt;和&lt;code&gt;UnPause&lt;/code&gt;函数&lt;/h2&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *Topic) Pause() error {
 	return t.doPause(true)
@@ -647,11 +1113,11 @@ func (t *Topic) IsPaused() bool {
 比如前面提到的&lt;code&gt;Close&lt;/code&gt;和&lt;code&gt;Delete&lt;/code&gt;。&lt;code&gt;Pause&lt;/code&gt;和&lt;code&gt;UnPause&lt;/code&gt;同样也使用这种方式，通过传递不同的参数调用&lt;code&gt;doPause&lt;/code&gt;函数来执行不同操作。
 &lt;code&gt;doPause&lt;/code&gt;设置&lt;code&gt;paused&lt;/code&gt;标志并向&lt;code&gt;pauseChan&lt;/code&gt;发送消息，随后由&lt;code&gt;messagePump&lt;/code&gt;在消息循环中暂停topic。&lt;/p&gt;
 
-&lt;h2 id=&#34;aggregatechannele2eprocessinglatency-函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;&lt;code&gt;AggregateChannelE2eProcessingLatency&lt;/code&gt;函数&lt;/h2&gt;
+&lt;h2 id=&#34;aggregatechannele2eprocessinglatency-函数:efd667b960aa7ec362edb15e7af0b343&#34;&gt;&lt;code&gt;AggregateChannelE2eProcessingLatency&lt;/code&gt;函数&lt;/h2&gt;
 
 &lt;p&gt;此函数用于性能统计，在&lt;code&gt;nsqd/statd.go&lt;/code&gt;中调用，客户端可以通过HTTP的/stats API看到统计结果。具体细节将在后续博文分析。&lt;/p&gt;
 
-&lt;h2 id=&#34;与channel相关的函数:bcb97463d8dd6c9afc36421d8c54864f&#34;&gt;与channel相关的函数&lt;/h2&gt;
+&lt;h2 id=&#34;与channel相关的函数:efd667b960aa7ec362edb15e7af0b343&#34;&gt;与channel相关的函数&lt;/h2&gt;
 
 &lt;p&gt;&lt;code&gt;GetChannel&lt;/code&gt;, &lt;code&gt;getOrCreateChannel&lt;/code&gt;，&lt;code&gt;GetExistingChannel&lt;/code&gt;, &lt;code&gt;DeleteExistingChannel&lt;/code&gt;这些函数是与channel相关的函数，将在后续的博文中分析。&lt;/p&gt;
 </description>
