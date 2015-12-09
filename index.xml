@@ -477,33 +477,6 @@ func (d *diskQueue) readOne() ([]byte, error) {
     </item>
     
     <item>
-      <title>nsqd_source_6_statistics</title>
-      <link>http://blog.123hurray.tk/2015/11/27/nsqd_source_6_statistics/</link>
-      <pubDate>Fri, 27 Nov 2015 15:54:45 +0800</pubDate>
-      
-      <guid>http://blog.123hurray.tk/2015/11/27/nsqd_source_6_statistics/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>nsqd_source_5_tcp_protocol</title>
-      <link>http://blog.123hurray.tk/2015/11/27/nsqd_source_5_tcp_protocol/</link>
-      <pubDate>Fri, 27 Nov 2015 15:54:31 +0800</pubDate>
-      
-      <guid>http://blog.123hurray.tk/2015/11/27/nsqd_source_5_tcp_protocol/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>nsqd_source_4_channels</title>
-      <link>http://blog.123hurray.tk/2015/11/27/nsqd_source_4_channels/</link>
-      <pubDate>Fri, 27 Nov 2015 15:54:16 +0800</pubDate>
-      
-      <guid>http://blog.123hurray.tk/2015/11/27/nsqd_source_4_channels/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>nsq源码阅读笔记之nsqd（二）——Topic</title>
       <link>http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics/</link>
       <pubDate>Wed, 25 Nov 2015 16:09:44 +0800</pubDate>
