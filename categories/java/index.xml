@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Java on RayXXZhang的博客</title>
-    <link>http://rayxxzhang.com/categories/java/</link>
+    <link>http://www.rayxxzhang.com/categories/java/</link>
     <description>Recent content in Java on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Thu, 29 Oct 2015 16:48:16 +0800</lastBuildDate>
-    <atom:link href="http://rayxxzhang.com/categories/java/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.rayxxzhang.com/categories/java/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>从Eclipse迁移到Android Studio</title>
-      <link>http://rayxxzhang.com/2015/10/29/migrate_to_android_studio/</link>
+      <link>http://www.rayxxzhang.com/2015/10/29/migrate_to_android_studio/</link>
       <pubDate>Thu, 29 Oct 2015 16:48:16 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/10/29/migrate_to_android_studio/</guid>
+      <guid>http://www.rayxxzhang.com/2015/10/29/migrate_to_android_studio/</guid>
       <description>
 
 &lt;p&gt;Android Studio发布正式版后，Google的重心转向AS，以后可能也会逐步停止对Eclipse的支持，而且目前开源项目有很多以及不支持Eclipse。因此决心将项目转到Android Studio进行开发。&lt;/p&gt;

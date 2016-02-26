@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>RayXXZhang的博客</title>
-    <link>http://rayxxzhang.com/</link>
+    <link>http://www.rayxxzhang.com/</link>
     <description>Recent content on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Fri, 27 Nov 2015 16:14:26 +0800</lastBuildDate>
-    <atom:link href="http://rayxxzhang.com/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.rayxxzhang.com/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>nsq源码阅读笔记之nsqd（三）——diskQueue</title>
-      <link>http://rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</link>
+      <link>http://www.rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</link>
       <pubDate>Fri, 27 Nov 2015 16:14:26 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</guid>
+      <guid>http://www.rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</guid>
       <description>
 
 &lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;是&lt;code&gt;backendQueue&lt;/code&gt;接口的一个实现。&lt;code&gt;backendQueue&lt;/code&gt;的作用是在实现在内存go channel缓冲区满的情况下对消息的处理的对象。
@@ -478,10 +478,10 @@ func (d *diskQueue) readOne() ([]byte, error) {
     
     <item>
       <title>nsq源码阅读笔记之nsqd（二）——Topic</title>
-      <link>http://rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</link>
+      <link>http://www.rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</link>
       <pubDate>Wed, 25 Nov 2015 16:09:44 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</guid>
+      <guid>http://www.rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</guid>
       <description>
 
 &lt;p&gt;与&lt;strong&gt;Topic&lt;/strong&gt;相关的代码主要位于&lt;code&gt;nsqd/nsqd.go&lt;/code&gt;, &lt;code&gt;nsqd/topic.go&lt;/code&gt;中。&lt;/p&gt;
@@ -1125,10 +1125,10 @@ func (t *Topic) IsPaused() bool {
     
     <item>
       <title>nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化</title>
-      <link>http://rayxxzhang.com/2015/11/12/nsqd-source-1-init/</link>
+      <link>http://www.rayxxzhang.com/2015/11/12/nsqd-source-1-init/</link>
       <pubDate>Thu, 12 Nov 2015 22:50:13 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/11/12/nsqd-source-1-init/</guid>
+      <guid>http://www.rayxxzhang.com/2015/11/12/nsqd-source-1-init/</guid>
       <description>
 
 &lt;h1 id=&#34;配置解析:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;配置解析&lt;/h1&gt;
@@ -1291,10 +1291,10 @@ func (w *WaitGroupWrapper) Wrap(cb func()) {
     
     <item>
       <title>从Eclipse迁移到Android Studio</title>
-      <link>http://rayxxzhang.com/2015/10/29/migrate_to_android_studio/</link>
+      <link>http://www.rayxxzhang.com/2015/10/29/migrate_to_android_studio/</link>
       <pubDate>Thu, 29 Oct 2015 16:48:16 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/10/29/migrate_to_android_studio/</guid>
+      <guid>http://www.rayxxzhang.com/2015/10/29/migrate_to_android_studio/</guid>
       <description>
 
 &lt;p&gt;Android Studio发布正式版后，Google的重心转向AS，以后可能也会逐步停止对Eclipse的支持，而且目前开源项目有很多以及不支持Eclipse。因此决心将项目转到Android Studio进行开发。&lt;/p&gt;
@@ -1428,10 +1428,10 @@ android {
     
     <item>
       <title>Golang实现带优先级的channel</title>
-      <link>http://rayxxzhang.com/2015/10/29/golang_priority_channel/</link>
+      <link>http://www.rayxxzhang.com/2015/10/29/golang_priority_channel/</link>
       <pubDate>Thu, 29 Oct 2015 15:32:52 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/10/29/golang_priority_channel/</guid>
+      <guid>http://www.rayxxzhang.com/2015/10/29/golang_priority_channel/</guid>
       <description>&lt;p&gt;一般Go语言同时使用多个&lt;code&gt;channel&lt;/code&gt;的方法是使用&lt;code&gt;select&lt;/code&gt;/&lt;code&gt;case&lt;/code&gt;语句配合&lt;code&gt;&amp;lt;-&lt;/code&gt;操作符，比如&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;select {
@@ -1473,10 +1473,10 @@ case &amp;lt;- chan2:
     
     <item>
       <title>POJ1059解题报告</title>
-      <link>http://rayxxzhang.com/2015/09/24/poj1059/</link>
+      <link>http://www.rayxxzhang.com/2015/09/24/poj1059/</link>
       <pubDate>Thu, 24 Sep 2015 22:55:21 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/24/poj1059/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/24/poj1059/</guid>
       <description>
 
 &lt;h1 id=&#34;题目概览:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;题目概览&lt;/h1&gt;
@@ -1686,10 +1686,10 @@ int main() {
     
     <item>
       <title>Windows下PyInstaller的使用教程</title>
-      <link>http://rayxxzhang.com/2015/09/15/pyinstaller/</link>
+      <link>http://www.rayxxzhang.com/2015/09/15/pyinstaller/</link>
       <pubDate>Tue, 15 Sep 2015 20:33:06 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/15/pyinstaller/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/15/pyinstaller/</guid>
       <description>
 
 &lt;p&gt;直接使用Python开发的软件时有许多不方便的地方，如需要安装特定的Python环境，需要安装依赖库。为了便于部署，需要将Python源代码编译成可执行文件，编译后的可执行文件就能脱离python环境运行了。&lt;/p&gt;
@@ -1793,10 +1793,10 @@ pyi-build specfile
     
     <item>
       <title>POJ1003解题报告</title>
-      <link>http://rayxxzhang.com/2015/09/14/poj1003/</link>
+      <link>http://www.rayxxzhang.com/2015/09/14/poj1003/</link>
       <pubDate>Mon, 14 Sep 2015 21:35:12 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/14/poj1003/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/14/poj1003/</guid>
       <description>
 
 &lt;h1 id=&#34;题目概览:2e98549788b10e1ae8406221df07f9c6&#34;&gt;题目概览&lt;/h1&gt;
@@ -1904,10 +1904,10 @@ int main() {
     
     <item>
       <title>POJ1002解题报告</title>
-      <link>http://rayxxzhang.com/2015/09/14/poj1002/</link>
+      <link>http://www.rayxxzhang.com/2015/09/14/poj1002/</link>
       <pubDate>Mon, 14 Sep 2015 19:05:45 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/14/poj1002/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/14/poj1002/</guid>
       <description>
 
 &lt;h1 id=&#34;题目概览:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;题目概览&lt;/h1&gt;
@@ -2232,10 +2232,10 @@ int main() {
     
     <item>
       <title>使用Hugo搭建博客</title>
-      <link>http://rayxxzhang.com/2015/09/14/first/</link>
+      <link>http://www.rayxxzhang.com/2015/09/14/first/</link>
       <pubDate>Mon, 14 Sep 2015 18:57:07 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/14/first/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/14/first/</guid>
       <description>&lt;p&gt;终于下决心开个博客，之前试过一次，但是太懒，基本没写什么，而且懒得维护服务器。所以这次博客选择用静态页面的方法搭建，静态博客的好处是能专注于内容本身而不是服务器的维护工作。&lt;/p&gt;
 
 &lt;p&gt;假期花了两天时间完成了建立博客的前期准备工作，在此分享一下其中的心得体会：&lt;/p&gt;

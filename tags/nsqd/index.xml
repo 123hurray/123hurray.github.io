@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Nsqd on RayXXZhang的博客</title>
-    <link>http://rayxxzhang.com/tags/nsqd/</link>
+    <link>http://www.rayxxzhang.com/tags/nsqd/</link>
     <description>Recent content in Nsqd on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Fri, 27 Nov 2015 16:14:26 +0800</lastBuildDate>
-    <atom:link href="http://rayxxzhang.com/tags/nsqd/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.rayxxzhang.com/tags/nsqd/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>nsq源码阅读笔记之nsqd（三）——diskQueue</title>
-      <link>http://rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</link>
+      <link>http://www.rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</link>
       <pubDate>Fri, 27 Nov 2015 16:14:26 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</guid>
+      <guid>http://www.rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/</guid>
       <description>
 
 &lt;p&gt;&lt;code&gt;diskQueue&lt;/code&gt;是&lt;code&gt;backendQueue&lt;/code&gt;接口的一个实现。&lt;code&gt;backendQueue&lt;/code&gt;的作用是在实现在内存go channel缓冲区满的情况下对消息的处理的对象。
@@ -478,10 +478,10 @@ func (d *diskQueue) readOne() ([]byte, error) {
     
     <item>
       <title>nsq源码阅读笔记之nsqd（二）——Topic</title>
-      <link>http://rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</link>
+      <link>http://www.rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</link>
       <pubDate>Wed, 25 Nov 2015 16:09:44 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</guid>
+      <guid>http://www.rayxxzhang.com/2015/11/25/nsqd_source_2_topics/</guid>
       <description>
 
 &lt;p&gt;与&lt;strong&gt;Topic&lt;/strong&gt;相关的代码主要位于&lt;code&gt;nsqd/nsqd.go&lt;/code&gt;, &lt;code&gt;nsqd/topic.go&lt;/code&gt;中。&lt;/p&gt;
@@ -1125,10 +1125,10 @@ func (t *Topic) IsPaused() bool {
     
     <item>
       <title>nsq源码阅读笔记之nsqd（一）——nsqd的配置解析和初始化</title>
-      <link>http://rayxxzhang.com/2015/11/12/nsqd-source-1-init/</link>
+      <link>http://www.rayxxzhang.com/2015/11/12/nsqd-source-1-init/</link>
       <pubDate>Thu, 12 Nov 2015 22:50:13 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/11/12/nsqd-source-1-init/</guid>
+      <guid>http://www.rayxxzhang.com/2015/11/12/nsqd-source-1-init/</guid>
       <description>
 
 &lt;h1 id=&#34;配置解析:e76b703d5211370058cbe6eb0135f2ee&#34;&gt;配置解析&lt;/h1&gt;

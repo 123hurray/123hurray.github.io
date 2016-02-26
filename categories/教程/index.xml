@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>教程 on RayXXZhang的博客</title>
-    <link>http://rayxxzhang.com/categories/%E6%95%99%E7%A8%8B/</link>
+    <link>http://www.rayxxzhang.com/categories/%E6%95%99%E7%A8%8B/</link>
     <description>Recent content in 教程 on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Thu, 29 Oct 2015 16:48:16 +0800</lastBuildDate>
-    <atom:link href="http://rayxxzhang.com/categories/%E6%95%99%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.rayxxzhang.com/categories/%E6%95%99%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>从Eclipse迁移到Android Studio</title>
-      <link>http://rayxxzhang.com/2015/10/29/migrate_to_android_studio/</link>
+      <link>http://www.rayxxzhang.com/2015/10/29/migrate_to_android_studio/</link>
       <pubDate>Thu, 29 Oct 2015 16:48:16 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/10/29/migrate_to_android_studio/</guid>
+      <guid>http://www.rayxxzhang.com/2015/10/29/migrate_to_android_studio/</guid>
       <description>
 
 &lt;p&gt;Android Studio发布正式版后，Google的重心转向AS，以后可能也会逐步停止对Eclipse的支持，而且目前开源项目有很多以及不支持Eclipse。因此决心将项目转到Android Studio进行开发。&lt;/p&gt;
@@ -149,10 +149,10 @@ android {
     
     <item>
       <title>Golang实现带优先级的channel</title>
-      <link>http://rayxxzhang.com/2015/10/29/golang_priority_channel/</link>
+      <link>http://www.rayxxzhang.com/2015/10/29/golang_priority_channel/</link>
       <pubDate>Thu, 29 Oct 2015 15:32:52 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/10/29/golang_priority_channel/</guid>
+      <guid>http://www.rayxxzhang.com/2015/10/29/golang_priority_channel/</guid>
       <description>&lt;p&gt;一般Go语言同时使用多个&lt;code&gt;channel&lt;/code&gt;的方法是使用&lt;code&gt;select&lt;/code&gt;/&lt;code&gt;case&lt;/code&gt;语句配合&lt;code&gt;&amp;lt;-&lt;/code&gt;操作符，比如&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;select {
@@ -194,10 +194,10 @@ case &amp;lt;- chan2:
     
     <item>
       <title>Windows下PyInstaller的使用教程</title>
-      <link>http://rayxxzhang.com/2015/09/15/pyinstaller/</link>
+      <link>http://www.rayxxzhang.com/2015/09/15/pyinstaller/</link>
       <pubDate>Tue, 15 Sep 2015 20:33:06 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/15/pyinstaller/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/15/pyinstaller/</guid>
       <description>
 
 &lt;p&gt;直接使用Python开发的软件时有许多不方便的地方，如需要安装特定的Python环境，需要安装依赖库。为了便于部署，需要将Python源代码编译成可执行文件，编译后的可执行文件就能脱离python环境运行了。&lt;/p&gt;
@@ -301,10 +301,10 @@ pyi-build specfile
     
     <item>
       <title>使用Hugo搭建博客</title>
-      <link>http://rayxxzhang.com/2015/09/14/first/</link>
+      <link>http://www.rayxxzhang.com/2015/09/14/first/</link>
       <pubDate>Mon, 14 Sep 2015 18:57:07 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/14/first/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/14/first/</guid>
       <description>&lt;p&gt;终于下决心开个博客，之前试过一次，但是太懒，基本没写什么，而且懒得维护服务器。所以这次博客选择用静态页面的方法搭建，静态博客的好处是能专注于内容本身而不是服务器的维护工作。&lt;/p&gt;
 
 &lt;p&gt;假期花了两天时间完成了建立博客的前期准备工作，在此分享一下其中的心得体会：&lt;/p&gt;

@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Poj on RayXXZhang的博客</title>
-    <link>http://rayxxzhang.com/categories/poj/</link>
+    <link>http://www.rayxxzhang.com/categories/poj/</link>
     <description>Recent content in Poj on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Thu, 24 Sep 2015 22:55:21 +0800</lastBuildDate>
-    <atom:link href="http://rayxxzhang.com/categories/poj/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.rayxxzhang.com/categories/poj/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>POJ1059解题报告</title>
-      <link>http://rayxxzhang.com/2015/09/24/poj1059/</link>
+      <link>http://www.rayxxzhang.com/2015/09/24/poj1059/</link>
       <pubDate>Thu, 24 Sep 2015 22:55:21 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/24/poj1059/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/24/poj1059/</guid>
       <description>
 
 &lt;h1 id=&#34;题目概览:47fa44fa87bdadb13bbc958230fb603b&#34;&gt;题目概览&lt;/h1&gt;
@@ -225,10 +225,10 @@ int main() {
     
     <item>
       <title>POJ1003解题报告</title>
-      <link>http://rayxxzhang.com/2015/09/14/poj1003/</link>
+      <link>http://www.rayxxzhang.com/2015/09/14/poj1003/</link>
       <pubDate>Mon, 14 Sep 2015 21:35:12 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/14/poj1003/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/14/poj1003/</guid>
       <description>
 
 &lt;h1 id=&#34;题目概览:2e98549788b10e1ae8406221df07f9c6&#34;&gt;题目概览&lt;/h1&gt;
@@ -336,10 +336,10 @@ int main() {
     
     <item>
       <title>POJ1002解题报告</title>
-      <link>http://rayxxzhang.com/2015/09/14/poj1002/</link>
+      <link>http://www.rayxxzhang.com/2015/09/14/poj1002/</link>
       <pubDate>Mon, 14 Sep 2015 19:05:45 +0800</pubDate>
       
-      <guid>http://rayxxzhang.com/2015/09/14/poj1002/</guid>
+      <guid>http://www.rayxxzhang.com/2015/09/14/poj1002/</guid>
       <description>
 
 &lt;h1 id=&#34;题目概览:6d7d293e123cc03d5e3f5bc86e7610c3&#34;&gt;题目概览&lt;/h1&gt;
