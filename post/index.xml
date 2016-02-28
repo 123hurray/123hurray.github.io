@@ -7,8 +7,99 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Fri, 27 Nov 2015 16:14:26 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 28 Feb 2016 20:53:12 +0800</lastBuildDate>
     <atom:link href="http://www.rayxxzhang.com/post/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>LeedCode 26: Remove Duplicates from Sorted Array</title>
+      <link>http://www.rayxxzhang.com/2016/02/28/leedcode_26/</link>
+      <pubDate>Sun, 28 Feb 2016 20:53:12 +0800</pubDate>
+      
+      <guid>http://www.rayxxzhang.com/2016/02/28/leedcode_26/</guid>
+      <description>
+
+&lt;h1 id=&#34;题目:7255cee766ef2e22cb7fc4f95b64b1d1&#34;&gt;题目&lt;/h1&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Given a sorted array, remove the duplicates in place such that each element appear only once and return the new length.&lt;/p&gt;
+
+&lt;p&gt;Do not allocate extra space for another array, you must do this in place with constant memory.&lt;/p&gt;
+
+&lt;p&gt;For example,
+Given input array nums = &lt;code&gt;[1,1,2]&lt;/code&gt;,&lt;/p&gt;
+
+&lt;p&gt;Your function should return length = &lt;code&gt;2&lt;/code&gt;, with the first two elements of nums being &lt;code&gt;1&lt;/code&gt; and &lt;code&gt;2&lt;/code&gt; respectively. It doesn&amp;rsquo;t matter what you leave beyond the new length.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&#34;解题思路:7255cee766ef2e22cb7fc4f95b64b1d1&#34;&gt;解题思路&lt;/h1&gt;
+
+&lt;p&gt;这道题是一道简单题，通过比较容易，但是不同解法还是存在着一些效率差别的。&lt;/p&gt;
+
+&lt;h2 id=&#34;解法一:7255cee766ef2e22cb7fc4f95b64b1d1&#34;&gt;解法一&lt;/h2&gt;
+
+&lt;p&gt;解法一判断在相邻的两个数相等的情况下，后面的所有数字往前移位，虽然能通过，但是效率较低，时间复杂度O(n^2)。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int unique = len;
+        for(int i = 0; i &amp;lt; unique - 1;) {
+            if(nums[i] == nums[i + 1]) {
+                for(int j = i + 1; j &amp;lt; unique; ++j) {
+                    nums[j - 1] = nums[j];
+                }
+                --unique;
+            } else {
+                ++i;
+            }
+        }
+        return unique;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;解法二:7255cee766ef2e22cb7fc4f95b64b1d1&#34;&gt;解法二&lt;/h2&gt;
+
+&lt;p&gt;解法二将重复的数字填充成&lt;code&gt;Integer.MAX_VALUE&lt;/code&gt;，然后再最后对数组进行排序即可，解法二使用最后的排序代替了遍历中的不断移位
+时间复杂度O(nlogn)，优于解法一&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int unique = len;
+        for(int i = 0; i &amp;lt; len - 1; ++i) {
+            if(nums[i] == nums[i + 1]) {
+                nums[i] = Integer.MAX_VALUE;
+                --unique;
+            }
+        }
+        Arrays.sort(nums);
+        return unique;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;解法三:7255cee766ef2e22cb7fc4f95b64b1d1&#34;&gt;解法三&lt;/h2&gt;
+
+&lt;p&gt;解法三使用了两个游标，分别指向当前不重复的尾部和要进行比较的头部，当两者不同时，将比较的头部的数复制到当前不重复的尾部的后一个位置，
+该解法只需要一次遍历，无需而外的排序，时间复杂度O(n)，是最优解法。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int i = 0;
+        for(int j = 1; j &amp;lt; len; ++j) {
+            if(nums[i] != nums[j]) {
+                ++i;
+                nums[i] = nums[j];
+            }
+        }
+        return i + 1;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>nsq源码阅读笔记之nsqd（三）——diskQueue</title>

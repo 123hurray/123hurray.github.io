@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-  <title>RayXXZhang的博客</title>
+  <title>LeedCode 26: Remove Duplicates from Sorted Array</title>
   <link rel="icon" type="image/x-icon" href="http://www.rayxxzhang.com/favicon.ico">
   <script src="http://www.rayxxzhang.com/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="http://www.rayxxzhang.com/bower_components/iron-icons/iron-icons.html">
@@ -245,60 +245,237 @@
 
 
 <paper-item>
-<div class="content" id="articles">
+<div class="content">
 
-
-  
-  <paper-card>
-		
-	  <div class="card-content">
-		  <div class="title">
-			<a href="http://www.rayxxzhang.com/2015/09/14/first/" ><div class="main">使用Hugo搭建博客</div></a>
-			
+  <div class="article">
+    <div class="title"><div class="main single">LeedCode 26: Remove Duplicates from Sorted Array
+    
+      
 
 <div class="categories">
 	<span>分类: </span>
 	
-	  <a href="http://www.rayxxzhang.com/categories/%E6%95%99%E7%A8%8B/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>教程</paper-button></a>
+	  <a href="http://www.rayxxzhang.com/categories/leetcode/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>LeetCode</paper-button></a>
+	
+	  <a href="http://www.rayxxzhang.com/categories/java/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Java</paper-button></a>
 	
 </div>
  
-		  </div>
-	  </div>
-	  
-	  <div class="card-actions">
-		
+     
+	</div></div>
+	<hr style="clear:both;">
+    <div class="markdown-body">
+
+<h1 id="题目:7255cee766ef2e22cb7fc4f95b64b1d1">题目</h1>
+
+<blockquote>
+<p>Given a sorted array, remove the duplicates in place such that each element appear only once and return the new length.</p>
+
+<p>Do not allocate extra space for another array, you must do this in place with constant memory.</p>
+
+<p>For example,
+Given input array nums = <code>[1,1,2]</code>,</p>
+
+<p>Your function should return length = <code>2</code>, with the first two elements of nums being <code>1</code> and <code>2</code> respectively. It doesn&rsquo;t matter what you leave beyond the new length.</p>
+</blockquote>
+
+<h1 id="解题思路:7255cee766ef2e22cb7fc4f95b64b1d1">解题思路</h1>
+
+<p>这道题是一道简单题，通过比较容易，但是不同解法还是存在着一些效率差别的。</p>
+
+<h2 id="解法一:7255cee766ef2e22cb7fc4f95b64b1d1">解法一</h2>
+
+<p>解法一判断在相邻的两个数相等的情况下，后面的所有数字往前移位，虽然能通过，但是效率较低，时间复杂度O(n^2)。</p>
+
+<pre><code class="language-java">public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int unique = len;
+        for(int i = 0; i &lt; unique - 1;) {
+            if(nums[i] == nums[i + 1]) {
+                for(int j = i + 1; j &lt; unique; ++j) {
+                    nums[j - 1] = nums[j];
+                }
+                --unique;
+            } else {
+                ++i;
+            }
+        }
+        return unique;
+    }
+}
+</code></pre>
+
+<h2 id="解法二:7255cee766ef2e22cb7fc4f95b64b1d1">解法二</h2>
+
+<p>解法二将重复的数字填充成<code>Integer.MAX_VALUE</code>，然后再最后对数组进行排序即可，解法二使用最后的排序代替了遍历中的不断移位
+时间复杂度O(nlogn)，优于解法一</p>
+
+<pre><code class="language-java">public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int unique = len;
+        for(int i = 0; i &lt; len - 1; ++i) {
+            if(nums[i] == nums[i + 1]) {
+                nums[i] = Integer.MAX_VALUE;
+                --unique;
+            }
+        }
+        Arrays.sort(nums);
+        return unique;
+    }
+}
+</code></pre>
+
+<h2 id="解法三:7255cee766ef2e22cb7fc4f95b64b1d1">解法三</h2>
+
+<p>解法三使用了两个游标，分别指向当前不重复的尾部和要进行比较的头部，当两者不同时，将比较的头部的数复制到当前不重复的尾部的后一个位置，
+该解法只需要一次遍历，无需而外的排序，时间复杂度O(n)，是最优解法。</p>
+
+<pre><code class="language-java">public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int i = 0;
+        for(int j = 1; j &lt; len; ++j) {
+            if(nums[i] != nums[j]) {
+                ++i;
+                nums[i] = nums[j];
+            }
+        }
+        return i + 1;
+    }
+}
+</code></pre>
+</div>
+	
+	<hr style="clear:both; margin:30px -16px; height:1px;border:none; background-color:#eee">
+
+	
 
 		<div class="tags">
-      <span>2015年9月14日</span>
-      
-        
-          <a href="http://www.rayxxzhang.com/tags/hugo/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>Hugo</paper-button></a>
-        
-          <a href="http://www.rayxxzhang.com/tags/polymer/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>Polymer</paper-button></a>
-        
-          <a href="http://www.rayxxzhang.com/tags/markdown/"><paper-button class="blue ripple"><iron-icon icon="loyalty"></iron-icon>markdown</paper-button></a>
-        
+      <span>2016年2月28日</span>
        
     </div>
-	  </div>
-  </paper-card>
+	
+	<hr style="clear:both; margin:20px -16px; height:1px;border:none;border-top:1px dashed #03a9f4;">
+	
+  
+  <style>
+  #ds-reset .ds-avatar img {
+	border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-comments {
+    border-bottom:none;
+  }
+  #ds-thread #ds-reset .ds-comment-body {
+	padding-left:85px;
+	padding-top: 4px;
+  }
+  #ds-thread #ds-reset .ds-meta {
+	border:none;
+  }
+  #ds-thread #ds-reset .ds-toolbar {
+	display:none;
+  }
+  #ds-thread #ds-reset .ds-sort a, #ds-thread #ds-reset li.ds-tab a.ds-current
+  ,#ds-thread #ds-reset a.ds-like-thread-button {
+		border:0;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+		transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+		display: inline-block;
+		position: relative;
+		box-sizing: border-box;
+		min-width: 5.14em;
+		margin: 0 0.29em;
+		background: transparent;
+		text-align: center;
+		font: inherit;
+		text-transform: uppercase;
+		outline-width: 0;
+		border-radius: 3px;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		-webkit-user-select: none;
+		user-select: none;
+		cursor: pointer;
+		z-index: 0;
+  }
  
-
-
+  #ds-thread #ds-reset a.ds-like-thread-button {
+    display:table;
+    margin:auto;
+  }
+  #ds-thread #ds-reset .ds-sort{
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  #ds-thread #ds-reset .ds-sort a{
+    margin:0;
+	padding:3px 5px;
+	margin-left:-1px;
+	box-shadow:none;
+  }
+  #ds-thread #ds-reset .ds-sort a:first-child:not(:last-child){
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child):not(:last-child){
+    border-radius: 0;
+	border-left: 1px solid #eee;
+	border-right: 1px solid #eee;
+  }
+  #ds-thread #ds-reset .ds-sort a:not(:first-child){
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+  #ds-thread #ds-reset li.ds-post
+  ,#ds-thread #ds-reset .ds-replybox  {
+	margin-top:16px;
+	border-top:0;
+	padding:15px 20px;
+	display: inline-block;
+	box-sizing: border-box;
+    background: #fff;
+    border-radius: 2px;
+	margin-bottom: 16px;
+	box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  }
+  #ds-thread #ds-reset .ds-replybox {
+    width:100%;
+	z-index:0;
+  }
+  #ds-thread #ds-reset .ds-replybox form {
+	margin-left: 80px;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar {
+    position:relative;
+  }
+  #ds-thread #ds-reset .ds-replybox .ds-avatar img {
+    border-radius:30px;
+	width: 60px;
+	height: 60px;
+  }
+  #ds-thread #ds-reset .ds-textarea-wrapper,#ds-reset .ds-gradient-bg,#ds-thread #ds-reset .ds-post-button {
+    background: transparent;
+  }
+  
+  </style>
+	<div class="ds-thread" data-thread-key="/2016/02/28/leedcode_26/" data-title="LeedCode 26: Remove Duplicates from Sorted Array" data-url="http://www.rayxxzhang.com/2016/02/28/leedcode_26/"></div>
+  
+  </div>
 </div>
 </paper-item>
-
 <paper-item>
   
-    <a href="/"><paper-fab icon="chevron-left"><a></a></paper-fab></a>
+    <paper-fab disabled icon="chevron-left"></paper-fab>
   
     <div class="flex"></div>
   
-    <paper-fab disabled icon="chevron-right"></paper-fab>
+    <a href="http://www.rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/"><paper-fab icon="chevron-right"></paper-fab></a>
   
 </paper-item>
-
 
 
       <paper-item>
@@ -330,3 +507,17 @@
   
 </body>
 </html>
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"blog123hurray"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
