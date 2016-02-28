@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Leetcode on RayXXZhang的博客</title>
-    <link>http://www.rayxxzhang.com/categories/leetcode/</link>
+    <link>http://blog.rayxxzhang.com/categories/leetcode/</link>
     <description>Recent content in Leetcode on RayXXZhang的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
     <lastBuildDate>Sun, 28 Feb 2016 20:53:12 +0800</lastBuildDate>
-    <atom:link href="http://www.rayxxzhang.com/categories/leetcode/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://blog.rayxxzhang.com/categories/leetcode/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>LeedCode 26: Remove Duplicates from Sorted Array</title>
-      <link>http://www.rayxxzhang.com/2016/02/28/leedcode_26/</link>
+      <link>http://blog.rayxxzhang.com/2016/02/28/leedcode_26/</link>
       <pubDate>Sun, 28 Feb 2016 20:53:12 +0800</pubDate>
       
-      <guid>http://www.rayxxzhang.com/2016/02/28/leedcode_26/</guid>
+      <guid>http://blog.rayxxzhang.com/2016/02/28/leedcode_26/</guid>
       <description>
 
 &lt;h1 id=&#34;题目:7255cee766ef2e22cb7fc4f95b64b1d1&#34;&gt;题目&lt;/h1&gt;
