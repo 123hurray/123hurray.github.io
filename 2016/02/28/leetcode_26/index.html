@@ -5,21 +5,21 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-  <title>nsqd_source_4_channels</title>
-  <link rel="icon" type="image/x-icon" href="http://blog.123hurray.tk/favicon.ico">
-  <script src="http://blog.123hurray.tk/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-icons/iron-icons.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-drawer-panel/paper-drawer-panel.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-icon-button/paper-icon-button.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-toolbar/paper-toolbar.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-fab/paper-fab.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-item/paper-item.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-menu/paper-menu.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-button/paper-button.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/paper-card/paper-card.html">
-  <link rel="import" href="http://blog.123hurray.tk/bower_components/iron-image/iron-image.html">
-  <link rel="stylesheet" href="http://blog.123hurray.tk/css/highlightjs-theme-github.css">
+  <title>LeetCode 26: Remove Duplicates from Sorted Array</title>
+  <link rel="icon" type="image/x-icon" href="http://blog.rayxxzhang.com/favicon.ico">
+  <script src="http://blog.rayxxzhang.com/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-toolbar/paper-toolbar.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-item/paper-item.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-menu/paper-menu.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-button/paper-button.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/paper-card/paper-card.html">
+  <link rel="import" href="http://blog.rayxxzhang.com/bower_components/iron-image/iron-image.html">
+  <link rel="stylesheet" href="http://blog.rayxxzhang.com/css/highlightjs-theme-github.css">
   <style is="custom-style">
     paper-item /deep/ .content {
 		width: 100%;
@@ -123,11 +123,11 @@
       background-color: var(--paper-grey-200, #eee);
        
       --paper-scroll-header-panel-full-header: {
-        background-image: url(http://blog.123hurray.tk/images/cover.png);
+        background-image: url(http://blog.rayxxzhang.com/images/cover.png);
       };
        
       --paper-scroll-header-panel-condensed-header: {
-        background-image: url(http://blog.123hurray.tk/images/cover.png);
+        background-image: url(http://blog.rayxxzhang.com/images/cover.png);
       };
     }
     
@@ -185,29 +185,29 @@
     font-family: 'Consolas', 'Microsoft YaHei UI', 'Microsoft YaHei', '微软雅黑';
   }
 	  </style>
-	<link rel="stylesheet" href="http://blog.123hurray.tk/css/markdown.css">
+	<link rel="stylesheet" href="http://blog.rayxxzhang.com/css/markdown.css">
 </head>
 <body>
   <paper-drawer-panel id="drawerPanel" responsive-width="1280px">
     <div class="nav scroll" drawer>
     
-      <iron-image class="profile" sizing="cover" src="http://blog.123hurray.tk/images/profile.png">
+      <iron-image class="profile" sizing="cover" src="http://blog.rayxxzhang.com/images/profile.png">
     
         
-          <iron-image class="photo" sizing="cover" src="http://blog.123hurray.tk/images/photo.png"></iron-image>
+          <iron-image class="photo" sizing="cover" src="http://blog.rayxxzhang.com/images/photo.png"></iron-image>
         
           <div class="author">RayXXZhang</div>
       </iron-image>
       <paper-menu>
-        <a href="http://blog.123hurray.tk/index.html"><paper-item>
+        <a href="http://blog.rayxxzhang.com/index.html"><paper-item>
           <iron-icon icon="home"></iron-icon>　<div class="flex">主页</div>
           <iron-icon icon="chevron-right"></iron-icon>
         </paper-item></a>
-        <a href="http://blog.123hurray.tk/categories/"><paper-item>
+        <a href="http://blog.rayxxzhang.com/categories/"><paper-item>
           <iron-icon icon="drafts"></iron-icon>　<div class="flex">分类</div>
           <iron-icon icon="chevron-right"></iron-icon>
         </paper-item></a>
-        <a href="http://blog.123hurray.tk/tags/"><paper-item>
+        <a href="http://blog.rayxxzhang.com/tags/"><paper-item>
           <iron-icon icon="loyalty"></iron-icon>　<div class="flex">标签</div>
           <iron-icon icon="chevron-right"></iron-icon>
         </paper-item></a>
@@ -219,27 +219,27 @@
       <paper-toolbar>
 
         <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-		<div class="bottom title"><a href="http://blog.123hurray.tk/index.html">RayXXZhang的博客</a></div>
+		<div class="bottom title"><a href="http://blog.rayxxzhang.com/index.html">RayXXZhang的博客</a></div>
         
         <div class="flex"></div>
 		
 			
-				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/weibo.png"></paper-icon-button></a>
+				<a href="http://www.weibo.com/123hurray"><paper-icon-button src="http://blog.rayxxzhang.com/images/weibo.png"></paper-icon-button></a>
 			
 		
 			
-				<a href="https://github.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/github.png"></paper-icon-button></a>
+				<a href="https://github.com/123hurray"><paper-icon-button src="http://blog.rayxxzhang.com/images/github.png"></paper-icon-button></a>
 			
 		
 			
-				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://blog.123hurray.tk/images/facebook.png"></paper-icon-button></a>
+				<a href="https://www.facebook.com/123hurray"><paper-icon-button src="http://blog.rayxxzhang.com/images/facebook.png"></paper-icon-button></a>
 			
 		
 			
-				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://blog.123hurray.tk/images/twitter.png"></paper-icon-button></a>
+				<a href="https://twitter.com/RayXXZhang"><paper-icon-button src="http://blog.rayxxzhang.com/images/twitter.png"></paper-icon-button></a>
 			
 		
-		<a href="http://blog.123hurray.tk/index.xml"><paper-icon-button src="http://blog.123hurray.tk/images/feed.png"></paper-icon-button></a>
+		<a href="http://blog.rayxxzhang.com/index.xml"><paper-icon-button src="http://blog.rayxxzhang.com/images/feed.png"></paper-icon-button></a>
       
       </paper-toolbar>
 
@@ -248,18 +248,112 @@
 <div class="content">
 
   <div class="article">
-    <div class="title"><div class="main single">nsqd_source_4_channels
+    <div class="title"><div class="main single">LeetCode 26: Remove Duplicates from Sorted Array
+    
+      
+
+<div class="categories">
+	<span>分类: </span>
+	
+	  <a href="http://blog.rayxxzhang.com/categories/leetcode/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>LeetCode</paper-button></a>
+	
+	  <a href="http://blog.rayxxzhang.com/categories/java/"><paper-button class="green ripple"><iron-icon icon="loyalty"></iron-icon>Java</paper-button></a>
+	
+</div>
+ 
      
 	</div></div>
 	<hr style="clear:both;">
-    <div class="markdown-body"></div>
+    <div class="markdown-body">
+
+<h1 id="题目:faeb78a3cbe3cf31c336af8064184bc2">题目</h1>
+
+<blockquote>
+<p>Given a sorted array, remove the duplicates in place such that each element appear only once and return the new length.</p>
+
+<p>Do not allocate extra space for another array, you must do this in place with constant memory.</p>
+
+<p>For example,
+Given input array nums = <code>[1,1,2]</code>,</p>
+
+<p>Your function should return length = <code>2</code>, with the first two elements of nums being <code>1</code> and <code>2</code> respectively. It doesn&rsquo;t matter what you leave beyond the new length.</p>
+</blockquote>
+
+<h1 id="解题思路:faeb78a3cbe3cf31c336af8064184bc2">解题思路</h1>
+
+<p>这道题是一道简单题，通过比较容易，但是不同解法还是存在着一些效率差别的。</p>
+
+<h2 id="解法一:faeb78a3cbe3cf31c336af8064184bc2">解法一</h2>
+
+<p>解法一判断在相邻的两个数相等的情况下，后面的所有数字往前移位，虽然能通过，但是效率较低，时间复杂度O(n^2)。</p>
+
+<pre><code class="language-java">public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int unique = len;
+        for(int i = 0; i &lt; unique - 1;) {
+            if(nums[i] == nums[i + 1]) {
+                for(int j = i + 1; j &lt; unique; ++j) {
+                    nums[j - 1] = nums[j];
+                }
+                --unique;
+            } else {
+                ++i;
+            }
+        }
+        return unique;
+    }
+}
+</code></pre>
+
+<h2 id="解法二:faeb78a3cbe3cf31c336af8064184bc2">解法二</h2>
+
+<p>解法二将重复的数字填充成<code>Integer.MAX_VALUE</code>，然后再最后对数组进行排序即可，解法二使用最后的排序代替了遍历中的不断移位
+时间复杂度O(nlogn)，优于解法一</p>
+
+<pre><code class="language-java">public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int unique = len;
+        for(int i = 0; i &lt; len - 1; ++i) {
+            if(nums[i] == nums[i + 1]) {
+                nums[i] = Integer.MAX_VALUE;
+                --unique;
+            }
+        }
+        Arrays.sort(nums);
+        return unique;
+    }
+}
+</code></pre>
+
+<h2 id="解法三:faeb78a3cbe3cf31c336af8064184bc2">解法三</h2>
+
+<p>解法三使用了两个游标，分别指向当前不重复的尾部和要进行比较的头部，当两者不同时，将比较的头部的数复制到当前不重复的尾部的后一个位置，
+该解法只需要一次遍历，无需而外的排序，时间复杂度O(n)，是最优解法。</p>
+
+<pre><code class="language-java">public class Solution {
+    public int removeDuplicates(int[] nums) {
+        int len = nums.length;
+        int i = 0;
+        for(int j = 1; j &lt; len; ++j) {
+            if(nums[i] != nums[j]) {
+                ++i;
+                nums[i] = nums[j];
+            }
+        }
+        return i + 1;
+    }
+}
+</code></pre>
+</div>
 	
 	<hr style="clear:both; margin:30px -16px; height:1px;border:none; background-color:#eee">
 
 	
 
 		<div class="tags">
-      <span>2015年11月27日</span>
+      <span>2016年2月28日</span>
        
     </div>
 	
@@ -368,18 +462,18 @@
   }
   
   </style>
-	<div class="ds-thread" data-thread-key="/2015/11/27/nsqd_source_4_channels/" data-title="nsqd_source_4_channels" data-url="http://blog.123hurray.tk/2015/11/27/nsqd_source_4_channels/"></div>
+	<div class="ds-thread" data-thread-key="/2016/02/28/leetcode_26/" data-title="LeetCode 26: Remove Duplicates from Sorted Array" data-url="http://blog.rayxxzhang.com/2016/02/28/leetcode_26/"></div>
   
   </div>
 </div>
 </paper-item>
 <paper-item>
   
-    <a href="http://blog.123hurray.tk/2015/11/27/nsqd_source_5_tcp_protocol/"><paper-fab icon="chevron-left"></paper-fab></a>
+    <paper-fab disabled icon="chevron-left"></paper-fab>
   
     <div class="flex"></div>
   
-    <a href="http://blog.123hurray.tk/2015/11/25/nsqd_source_2_topics/"><paper-fab icon="chevron-right"></paper-fab></a>
+    <a href="http://blog.rayxxzhang.com/2015/11/27/nsqd_source_3_diskqueue/"><paper-fab icon="chevron-right"></paper-fab></a>
   
 </paper-item>
 
@@ -391,7 +485,7 @@
       </paper-item>
     </paper-scroll-header-panel>
   </paper-drawer-panel>
-  <script src="http://blog.123hurray.tk/js/highlight.pack.js"></script>
+  <script src="http://blog.rayxxzhang.com/js/highlight.pack.js"></script>
     <script type="text/javascript">
     var duoshuoQuery = {short_name:"123hurray"};
     (function() {
