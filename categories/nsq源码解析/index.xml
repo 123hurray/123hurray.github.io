@@ -7,8 +7,646 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>© 2015 Copyright RayXXZhang</copyright>
-    <lastBuildDate>Fri, 27 Nov 2015 16:14:26 +0800</lastBuildDate>
+    <lastBuildDate>Mon, 29 Feb 2016 13:51:16 +0800</lastBuildDate>
     <atom:link href="http://blog.rayxxzhang.com/categories/nsq%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>nsq源码阅读笔记之nsqd（四）——Channel</title>
+      <link>http://blog.rayxxzhang.com/2016/02/29/nsqd_source_4_channels/</link>
+      <pubDate>Mon, 29 Feb 2016 13:51:16 +0800</pubDate>
+      
+      <guid>http://blog.rayxxzhang.com/2016/02/29/nsqd_source_4_channels/</guid>
+      <description>
+
+&lt;p&gt;与&lt;strong&gt;Channel&lt;/strong&gt;相关的代码主要位于&lt;code&gt;nsqd/channel.go&lt;/code&gt;, &lt;code&gt;nsqd/nsqd.go&lt;/code&gt;中。&lt;/p&gt;
+
+&lt;h1 id=&#34;channel与topic的关系:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;Channel与Topic的关系&lt;/h1&gt;
+
+&lt;p&gt;Channel是消费者订阅特定Topic的一种抽象。对于发往Topic的消息，nsqd向该Topic下的所有Channel投递消息，
+而同一个Channel只投递一次，Channel下如果存在多个消费者，则随机选择一个消费者做投递。这种投递方式可以被用作消费者负载均衡。&lt;/p&gt;
+
+&lt;p&gt;Channel从属于特定Topic，可以认为是Topic的下一级。在同一个Topic之下可以有零个或多个Channel。
+和Topic一样，Channel同样有永久和临时之分，永久的Channel只能通过显式删除销毁，临时的Channel在最后一个消费者断开连接的时候被销毁。&lt;/p&gt;
+
+&lt;p&gt;与服务于生产者的Topic不同，Channel直接面向消费者。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;生产者 -&amp;gt; 消息 -&amp;gt; Topic -&amp;gt; Channel -&amp;gt; 消费者1
+                       -&amp;gt; Channel2 -&amp;gt; 消费者2
+                       -&amp;gt; Channel3 -&amp;gt; 消费者3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在代码上Channel和Topic有许多相似之处，对于和Topic相同或者相似的部分，以下不再赘述，可以参考Topic相关博文。&lt;/p&gt;
+
+&lt;h1 id=&#34;channel的创建:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;Channel的创建&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewChannel(topicName string, channelName string, ctx *context,
+	deleteCallback func(*Channel)) *Channel {
+
+	c := &amp;amp;Channel{
+		topicName:      topicName,
+		name:           channelName,
+		memoryMsgChan:  make(chan *Message, ctx.nsqd.getOpts().MemQueueSize),
+		clientMsgChan:  make(chan *Message),
+		exitChan:       make(chan int),
+		clients:        make(map[int64]Consumer),
+		deleteCallback: deleteCallback,
+		ctx:            ctx,
+	}
+	if len(ctx.nsqd.getOpts().E2EProcessingLatencyPercentiles) &amp;gt; 0 {
+		c.e2eProcessingLatencyStream = quantile.New(
+			ctx.nsqd.getOpts().E2EProcessingLatencyWindowTime,
+			ctx.nsqd.getOpts().E2EProcessingLatencyPercentiles,
+		)
+	}
+
+	c.initPQ()
+
+	if strings.HasSuffix(channelName, &amp;quot;#ephemeral&amp;quot;) {
+		c.ephemeral = true
+		c.backend = newDummyBackendQueue()
+	} else {
+		// backend names, for uniqueness, automatically include the topic...
+		backendName := getBackendName(topicName, channelName)
+		c.backend = newDiskQueue(backendName,
+			ctx.nsqd.getOpts().DataPath,
+			ctx.nsqd.getOpts().MaxBytesPerFile,
+			int32(minValidMsgLength),
+			int32(ctx.nsqd.getOpts().MaxMsgSize)+minValidMsgLength,
+			ctx.nsqd.getOpts().SyncEvery,
+			ctx.nsqd.getOpts().SyncTimeout,
+			ctx.nsqd.getOpts().Logger)
+	}
+
+	go c.messagePump()
+
+	c.ctx.nsqd.Notify(c)
+
+	return c
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Channel和Topic在创建的时候都会初始化结构，初始化backend，创建消息循环，
+不同的是Channel在创建时多了给&lt;code&gt;e2eProcessingLatencyStream&lt;/code&gt;赋值的以及&lt;code&gt;initPQ&lt;/code&gt;部分。&lt;/p&gt;
+
+&lt;p&gt;其中&lt;code&gt;e2eProcessingLatencyStream&lt;/code&gt;主要用于统计消息投递的延迟等，将在以后的博文中叙述。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Channel) initPQ() {
+	pqSize := int(math.Max(1, float64(c.ctx.nsqd.getOpts().MemQueueSize)/10))
+
+	c.inFlightMessages = make(map[MessageID]*Message)
+	c.deferredMessages = make(map[MessageID]*pqueue.Item)
+
+	c.inFlightMutex.Lock()
+	c.inFlightPQ = newInFlightPqueue(pqSize)
+	c.inFlightMutex.Unlock()
+
+	c.deferredMutex.Lock()
+	c.deferredPQ = pqueue.New(pqSize)
+	c.deferredMutex.Unlock()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;initPQ&lt;/code&gt;函数创建了两个字典&lt;code&gt;inFlightMessages&lt;/code&gt;、&lt;code&gt;deferredMessages&lt;/code&gt;和两个队列&lt;code&gt;inFlightPQ&lt;/code&gt;、&lt;code&gt;deferredPQ&lt;/code&gt;。
+在nsq中inFlight指的是正在投递但还没确认投递成功的消息，defferred指的是投递失败，等待重新投递的消息。
+&lt;code&gt;initPQ&lt;/code&gt;创建的字典和队列主要用于索引和存放这两类消息。其中两个字典使用消息ID作索引。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;inFlightPQ&lt;/code&gt;使用&lt;code&gt;newInFlightPqueue&lt;/code&gt;初始化，&lt;code&gt;InFlightPqueue&lt;/code&gt;位于&lt;code&gt;nsqd\in_flight_pqueue.go&lt;/code&gt;。
+&lt;code&gt;nsqd\in_flight_pqueue.go&lt;/code&gt;是nsq实现的一个优先级队列，提供了常用的队列操作，值得学习。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;deferredPQ&lt;/code&gt;使用&lt;code&gt;pqueue.New&lt;/code&gt;初始化，&lt;code&gt;pqueue&lt;/code&gt;位于&lt;code&gt;nsqd\pqueue.go&lt;/code&gt;，也是一个优先级队列。&lt;/p&gt;
+
+&lt;h1 id=&#34;待投递消息进入channel:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;待投递消息进入Channel&lt;/h1&gt;
+
+&lt;p&gt;在分析Topic时提到，消息进入Topic的消息循环后会被投递到该Topic下所有的Channel，由Channel的&lt;code&gt;PutMessage&lt;/code&gt;函数进行处理。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// PutMessage writes a Message to the queue
+func (c *Channel) PutMessage(m *Message) error {
+	c.RLock()
+	defer c.RUnlock()
+	if atomic.LoadInt32(&amp;amp;c.exitFlag) == 1 {
+		return errors.New(&amp;quot;exiting&amp;quot;)
+	}
+	err := c.put(m)
+	if err != nil {
+		return err
+	}
+	atomic.AddUint64(&amp;amp;c.messageCount, 1)
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;PutMessage&lt;/code&gt;判断当前Channel是否已经被销毁，若未销毁，则调用&lt;code&gt;put&lt;/code&gt;函数进行处理，最后，自增消息计数器。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Channel) put(m *Message) error {
+	select {
+	case c.memoryMsgChan &amp;lt;- m:
+	default:
+		b := bufferPoolGet()
+		err := writeMessageToBackend(b, m, c.backend)
+		bufferPoolPut(b)
+		c.ctx.nsqd.SetHealth(err)
+		if err != nil {
+			c.ctx.nsqd.logf(&amp;quot;CHANNEL(%s) ERROR: failed to write message to backend - %s&amp;quot;,
+				c.name, err)
+			return err
+		}
+	}
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Channel的&lt;code&gt;put&lt;/code&gt;函数与Topic的同名函数相似，可以参考Topic。&lt;/p&gt;
+
+&lt;h1 id=&#34;channel对消息的处理:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;Channel对消息的处理&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// messagePump reads messages from either memory or backend and sends
+// messages to clients over a go chan
+func (c *Channel) messagePump() {
+	var msg *Message
+	var buf []byte
+	var err error
+
+	for {
+		// do an extra check for closed exit before we select on all the memory/backend/exitChan
+		// this solves the case where we are closed and something else is draining clientMsgChan into
+		// backend. we don&#39;t want to reverse that
+		if atomic.LoadInt32(&amp;amp;c.exitFlag) == 1 {
+			goto exit
+		}
+
+		select {
+		case msg = &amp;lt;-c.memoryMsgChan:
+		case buf = &amp;lt;-c.backend.ReadChan():
+			msg, err = decodeMessage(buf)
+			if err != nil {
+				c.ctx.nsqd.logf(&amp;quot;ERROR: failed to decode message - %s&amp;quot;, err)
+				continue
+			}
+		case &amp;lt;-c.exitChan:
+			goto exit
+		}
+
+		msg.Attempts++
+
+		atomic.StoreInt32(&amp;amp;c.bufferedCount, 1)
+		c.clientMsgChan &amp;lt;- msg
+		atomic.StoreInt32(&amp;amp;c.bufferedCount, 0)
+		// the client will call back to mark as in-flight w/ its info
+	}
+
+exit:
+	c.ctx.nsqd.logf(&amp;quot;CHANNEL(%s): closing ... messagePump&amp;quot;, c.name)
+	close(c.clientMsgChan)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;进入Channel的消息在&lt;code&gt;messagePump&lt;/code&gt;函数中处理，该函数也与Topic的同名函数相似：
+消息都从memory和backend两个来源接收，然后解码消息后处理。与Topic不同的是，channel在投递消息前，
+会自增&lt;code&gt;msg.Attempts&lt;/code&gt;，该变量用于保存投递尝试的次数。&lt;/p&gt;
+
+&lt;p&gt;在消息投递前会将&lt;code&gt;bufferedCount&lt;/code&gt;置为1，在投递后置为0。该变量在&lt;code&gt;Depth&lt;/code&gt;函数中被调用。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Channel) Depth() int64 {
+	return int64(len(c.memoryMsgChan)) + c.backend.Depth() + int64(atomic.LoadInt32(&amp;amp;c.bufferedCount))
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;Deepth&lt;/code&gt;函数返回内存，磁盘以及正在投递的消息数量之和，也就是尚未投递成功的消息数。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;messagePump&lt;/code&gt;函数在投递消息时将消息送入&lt;code&gt;clientMsgChan&lt;/code&gt;，随后被&lt;code&gt;nsqd\protocol_v2.go&lt;/code&gt;的&lt;code&gt;messagePump&lt;/code&gt;函数处理。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// nsqd\protocol_v2.go  messagePump Line 303
+case msg, ok := &amp;lt;-clientMsgChan:
+    if !ok {
+        goto exit
+    }
+
+    if sampleRate &amp;gt; 0 &amp;amp;&amp;amp; rand.Int31n(100) &amp;gt; sampleRate {
+        continue
+    }
+
+    subChannel.StartInFlightTimeout(msg, client.ID, msgTimeout)
+    client.SendingMessage()
+    err = p.SendMessage(client, msg, &amp;amp;buf)
+    if err != nil {
+        goto exit
+    }
+    flushed = false
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在protocolV2的&lt;code&gt;messagePump&lt;/code&gt;函数中，消息被通过投送到相应消费者。
+投递时首先调用Channel的&lt;code&gt;StartInFlightTimeout&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Channel) StartInFlightTimeout(msg *Message, clientID int64, timeout time.Duration) error {
+	now := time.Now()
+	msg.clientID = clientID
+	msg.deliveryTS = now
+	msg.pri = now.Add(timeout).UnixNano()
+	err := c.pushInFlightMessage(msg)
+	if err != nil {
+		return err
+	}
+	c.addToInFlightPQ(msg)
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;该函数填充消息的消费者ID、投送时间、优先级，然后调用&lt;code&gt;pushInFlightMessage&lt;/code&gt;函数将消息放入&lt;code&gt;inFlightMessages&lt;/code&gt;字典中。
+最后调用&lt;code&gt;addToInFlightPQ&lt;/code&gt;将消息放入&lt;code&gt;inFlightPQ&lt;/code&gt;队列中。&lt;/p&gt;
+
+&lt;p&gt;至此，消息投递流程完成，接下来需要等待消费者对投送结果的反馈。消费者通过发送&lt;code&gt;FIN&lt;/code&gt;、&lt;code&gt;REQ&lt;/code&gt;、&lt;code&gt;TOUCH&lt;/code&gt;来回复对消息的处理结果。&lt;/p&gt;
+
+&lt;p&gt;关于TCP protocol相关的内容，在后续博文分析。以下只分析与Channel相关的部分。&lt;/p&gt;
+
+&lt;h1 id=&#34;消息投送结果处理:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;消息投送结果处理&lt;/h1&gt;
+
+&lt;h2 id=&#34;消息投送成功的处理:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;消息投送成功的处理&lt;/h2&gt;
+
+&lt;p&gt;消费者发送&lt;code&gt;FIN&lt;/code&gt;，表明消息已经被接收并正确处理。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// FinishMessage successfully discards an in-flight message
+func (c *Channel) FinishMessage(clientID int64, id MessageID) error {
+	msg, err := c.popInFlightMessage(clientID, id)
+	if err != nil {
+		return err
+	}
+	c.removeFromInFlightPQ(msg)
+	if c.e2eProcessingLatencyStream != nil {
+		c.e2eProcessingLatencyStream.Insert(msg.Timestamp)
+	}
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;FIN消息在与Channel相关的部分交由&lt;code&gt;FinishMessage&lt;/code&gt;处理。
+最后调用&lt;code&gt;addToInFlightPQ&lt;/code&gt;将消息放入&lt;code&gt;inFlightPQ&lt;/code&gt;队列中。
+&lt;code&gt;FinishMessage&lt;/code&gt;分别调用&lt;code&gt;popInFlightMessage&lt;/code&gt;和&lt;code&gt;removeFromInFlightPQ&lt;/code&gt;将消息从&lt;code&gt;inFlightMessages&lt;/code&gt;和&lt;code&gt;inFlightPQ&lt;/code&gt;中删除。
+最后，统计该消息的投递情况。&lt;/p&gt;
+
+&lt;h2 id=&#34;消息投送失败的处理:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;消息投送失败的处理&lt;/h2&gt;
+
+&lt;p&gt;客户端发送&lt;code&gt;REQ&lt;/code&gt;，表明消息投递失败，需要再次被投递。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// RequeueMessage requeues a message based on `time.Duration`, ie:
+//
+// `timeoutMs` == 0 - requeue a message immediately
+// `timeoutMs`  &amp;gt; 0 - asynchronously wait for the specified timeout
+//     and requeue a message (aka &amp;quot;deferred requeue&amp;quot;)
+//
+func (c *Channel) RequeueMessage(clientID int64, id MessageID, timeout time.Duration) error {
+	// remove from inflight first
+	msg, err := c.popInFlightMessage(clientID, id)
+	if err != nil {
+		return err
+	}
+	c.removeFromInFlightPQ(msg)
+
+	if timeout == 0 {
+		return c.doRequeue(msg)
+	}
+
+	// deferred requeue
+	return c.StartDeferredTimeout(msg, timeout)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Channel在&lt;code&gt;RequeueMessage&lt;/code&gt;函数对消息投递失败进行处理。该函数将消息从&lt;code&gt;inFlightMessages&lt;/code&gt;和&lt;code&gt;inFlightPQ&lt;/code&gt;中删除，
+随后进行重新投递。&lt;/p&gt;
+
+&lt;p&gt;发送&lt;code&gt;REQ&lt;/code&gt;时有一个附加参数timeout，该值为0时表示立即重新投递，大于0时表示等待timeout时间之后投递。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+// doRequeue performs the low level operations to requeue a message
+func (c *Channel) doRequeue(m *Message) error {
+	c.RLock()
+	defer c.RUnlock()
+	if atomic.LoadInt32(&amp;amp;c.exitFlag) == 1 {
+		return errors.New(&amp;quot;exiting&amp;quot;)
+	}
+	err := c.put(m)
+	if err != nil {
+		return err
+	}
+	atomic.AddUint64(&amp;amp;c.requeueCount, 1)
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;立即投递使用&lt;code&gt;doRequeue&lt;/code&gt;函数，该函数简单地调用&lt;code&gt;put&lt;/code&gt;函数重新进行消息的投递，并自增&lt;code&gt;requeueCount&lt;/code&gt;，该变量在统计消息投递情况时用到。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Channel) StartDeferredTimeout(msg *Message, timeout time.Duration) error {
+	absTs := time.Now().Add(timeout).UnixNano()
+	item := &amp;amp;pqueue.Item{Value: msg, Priority: absTs}
+	err := c.pushDeferredMessage(item)
+	if err != nil {
+		return err
+	}
+	c.addToDeferredPQ(item)
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果timeout大于0，则调用&lt;code&gt;StartDeferredTimeout&lt;/code&gt;进行延迟投递。
+首先计算延迟投递的时间点，然后调用&lt;code&gt;pushDeferredMessage&lt;/code&gt;将消息加入&lt;code&gt;deferredMessage&lt;/code&gt;字典，
+最后将消息放入&lt;code&gt;deferredPQ&lt;/code&gt;队列。延迟投递的消息会被专门的worker扫描并在延迟投递的时间点后进行投递。
+需要注意的是，立即重新投递的消息不会进入&lt;code&gt;deferredPQ&lt;/code&gt;队列。&lt;/p&gt;
+
+&lt;h2 id=&#34;消息的超时值的重置:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;消息的超时值的重置&lt;/h2&gt;
+
+&lt;p&gt;消费者发送&lt;code&gt;TOUCH&lt;/code&gt;，表明该消息的超时值需要被重置。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+// TouchMessage resets the timeout for an in-flight message
+func (c *Channel) TouchMessage(clientID int64, id MessageID, clientMsgTimeout time.Duration) error {
+	msg, err := c.popInFlightMessage(clientID, id)
+	if err != nil {
+		return err
+	}
+	c.removeFromInFlightPQ(msg)
+
+	newTimeout := time.Now().Add(clientMsgTimeout)
+	if newTimeout.Sub(msg.deliveryTS) &amp;gt;=
+		c.ctx.nsqd.getOpts().MaxMsgTimeout {
+		// we would have gone over, set to the max
+		newTimeout = msg.deliveryTS.Add(c.ctx.nsqd.getOpts().MaxMsgTimeout)
+	}
+
+	msg.pri = newTimeout.UnixNano()
+	err = c.pushInFlightMessage(msg)
+	if err != nil {
+		return err
+	}
+	c.addToInFlightPQ(msg)
+	return nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个过程比较简单，从&lt;code&gt;inFlightPQ&lt;/code&gt;中取出消息，设置新的超时值后重新放入队列，新的超时值由当前时间、
+客户端通过&lt;code&gt;IDENTIFY&lt;/code&gt;设置的超时值、配置中允许的最大超时值&lt;code&gt;MaxMsgTimeout&lt;/code&gt;共同决定。&lt;/p&gt;
+
+&lt;h1 id=&#34;消息的超时和延迟投递:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;消息的超时和延迟投递&lt;/h1&gt;
+
+&lt;p&gt;消息超时和延迟投递的处理流程层次比较多：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;n.waitGroup.Wrap(func() { n.queueScanLoop() })
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;首先是在&lt;code&gt;nsqd\nsqd.go&lt;/code&gt;中启动的处理延迟消息的goroutine。该goroutine执行&lt;code&gt;queueScanLoop&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// queueScanLoop runs in a single goroutine to process in-flight and deferred
+// priority queues. It manages a pool of queueScanWorker (configurable max of
+// QueueScanWorkerPoolMax (default: 4)) that process channels concurrently.
+//
+// It copies Redis&#39;s probabilistic expiration algorithm: it wakes up every
+// QueueScanInterval (default: 100ms) to select a random QueueScanSelectionCount
+// (default: 20) channels from a locally cached list (refreshed every
+// QueueScanRefreshInterval (default: 5s)).
+//
+// If either of the queues had work to do the channel is considered &amp;quot;dirty&amp;quot;.
+//
+// If QueueScanDirtyPercent (default: 25%) of the selected channels were dirty,
+// the loop continues without sleep.
+func (n *NSQD) queueScanLoop() {
+	workCh := make(chan *Channel, n.getOpts().QueueScanSelectionCount)
+	responseCh := make(chan bool, n.getOpts().QueueScanSelectionCount)
+	closeCh := make(chan int)
+
+	workTicker := time.NewTicker(n.getOpts().QueueScanInterval)
+	refreshTicker := time.NewTicker(n.getOpts().QueueScanRefreshInterval)
+
+	channels := n.channels()
+	n.resizePool(len(channels), workCh, responseCh, closeCh)
+
+	for {
+		select {
+		case &amp;lt;-workTicker.C:
+			if len(channels) == 0 {
+				continue
+			}
+		case &amp;lt;-refreshTicker.C:
+			channels = n.channels()
+			n.resizePool(len(channels), workCh, responseCh, closeCh)
+			continue
+		case &amp;lt;-n.exitChan:
+			goto exit
+		}
+
+		num := n.getOpts().QueueScanSelectionCount
+		if num &amp;gt; len(channels) {
+			num = len(channels)
+		}
+
+	loop:
+		for _, i := range util.UniqRands(num, len(channels)) {
+			workCh &amp;lt;- channels[i]
+		}
+
+		numDirty := 0
+		for i := 0; i &amp;lt; num; i++ {
+			if &amp;lt;-responseCh {
+				numDirty++
+			}
+		}
+
+		if float64(numDirty)/float64(num) &amp;gt; n.getOpts().QueueScanDirtyPercent {
+			goto loop
+		}
+	}
+
+exit:
+	n.logf(&amp;quot;QUEUESCAN: closing&amp;quot;)
+	close(closeCh)
+	workTicker.Stop()
+	refreshTicker.Stop()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;该函数使用若干个worker来扫描并处理当前在投递中以及等待重新投递的消息。worker的个数由配置和当前Channel数量共同决定。
+首先，初始化3个gochannel：workCh、responseCh、closeCh，分别控制worker的输入、输出和销毁。&lt;/p&gt;
+
+&lt;p&gt;然后获取当前的Channel集合，并且调用&lt;code&gt;resizePool&lt;/code&gt;函数来启动指定数量的worker。&lt;/p&gt;
+
+&lt;p&gt;最后进入扫描的循环。在循环中，等待两个定时器，&lt;code&gt;workTicker&lt;/code&gt;和&lt;code&gt;refreshTicker&lt;/code&gt;，
+定时时间分别由由配置中的&lt;code&gt;QueueScanInterval&lt;/code&gt;和&lt;code&gt;QueueScanRefreshInterval&lt;/code&gt;决定。
+这种由等待定时器触发的循环避免了函数持续的执行影响性能，而Golang的特性使得这种机制在写法上非常简洁。&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;workTicker&lt;/code&gt;定时器触发扫描流程。
+nsqd采用了Redis的probabilistic expiration算法来进行扫描。首先从所有Channel中随机选取部分Channel，然后遍历被选取的Channel，投到&lt;code&gt;workerChan&lt;/code&gt;中，并且等待反馈结果，
+结果有两种，dirty和非dirty，如果dirty的比例超过配置中设定的&lt;code&gt;QueueScanDirtyPercent&lt;/code&gt;，那么不进入休眠，
+继续扫描，如果比例较低，则重新等待定时器触发下一轮扫描。这种机制可以在保证处理延时较低的情况下减少对CPU资源的浪费。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;refreshTicker&lt;/code&gt;定时器触发更新Channel列表流程。
+这个流程比较简单，先获取一次Channel列表，
+再调用&lt;code&gt;resizePool&lt;/code&gt;重新分配worker。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;接下来再看看&lt;code&gt;resizePool&lt;/code&gt;的实现。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// resizePool adjusts the size of the pool of queueScanWorker goroutines
+//
+// 	1 &amp;lt;= pool &amp;lt;= min(num * 0.25, QueueScanWorkerPoolMax)
+//
+func (n *NSQD) resizePool(num int, workCh chan *Channel, responseCh chan bool, closeCh chan int) {
+	idealPoolSize := int(float64(num) * 0.25)
+	if idealPoolSize &amp;lt; 1 {
+		idealPoolSize = 1
+	} else if idealPoolSize &amp;gt; n.getOpts().QueueScanWorkerPoolMax {
+		idealPoolSize = n.getOpts().QueueScanWorkerPoolMax
+	}
+	for {
+		if idealPoolSize == n.poolSize {
+			break
+		} else if idealPoolSize &amp;lt; n.poolSize {
+			// contract
+			closeCh &amp;lt;- 1
+			n.poolSize--
+		} else {
+			// expand
+			n.waitGroup.Wrap(func() {
+				n.queueScanWorker(workCh, responseCh, closeCh)
+			})
+			n.poolSize++
+		}
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个部分比较简单。注意一点，当需要的worker数量超过之前分配的数量时，通过向&lt;code&gt;closeCh&lt;/code&gt;投递消息使多余的worker销毁，
+如果需要的数量比之前的多，则通过&lt;code&gt;queueScanWorker&lt;/code&gt;创建新的worker。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;// queueScanWorker receives work (in the form of a channel) from queueScanLoop
+// and processes the deferred and in-flight queues
+func (n *NSQD) queueScanWorker(workCh chan *Channel, responseCh chan bool, closeCh chan int) {
+	for {
+		select {
+		case c := &amp;lt;-workCh:
+			now := time.Now().UnixNano()
+			dirty := false
+			if c.processInFlightQueue(now) {
+				dirty = true
+			}
+			if c.processDeferredQueue(now) {
+				dirty = true
+			}
+			responseCh &amp;lt;- dirty
+		case &amp;lt;-closeCh:
+			return
+		}
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;queueScanWorker&lt;/code&gt;接收&lt;code&gt;workCh&lt;/code&gt;发来的消息，处理，并且通过&lt;code&gt;responseCh&lt;/code&gt;反馈消息。收到&lt;code&gt;closeCh&lt;/code&gt;时则关闭。
+由于所有worker都监听相同的&lt;code&gt;closeCh&lt;/code&gt;，所以当向&lt;code&gt;closeCh&lt;/code&gt;发送消息时，随机关闭一个worker。
+且由于&lt;code&gt;workCh&lt;/code&gt;和&lt;code&gt;closeCh&lt;/code&gt;的监听是串行的，所以不存在任务处理到一半时被关闭的可能。
+这也是nsq中优雅关闭gochannel的的一个例子。&lt;/p&gt;
+
+&lt;p&gt;worker处理两件事：&lt;/p&gt;
+
+&lt;p&gt;一是处理inFlight消息&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+func (c *Channel) processInFlightQueue(t int64) bool {
+	c.exitMutex.RLock()
+	defer c.exitMutex.RUnlock()
+
+	if c.Exiting() {
+		return false
+	}
+
+	dirty := false
+	for {
+		c.inFlightMutex.Lock()
+		msg, _ := c.inFlightPQ.PeekAndShift(t)
+		c.inFlightMutex.Unlock()
+
+		if msg == nil {
+			goto exit
+		}
+		dirty = true
+
+		_, err := c.popInFlightMessage(msg.clientID, msg.ID)
+		if err != nil {
+			goto exit
+		}
+		atomic.AddUint64(&amp;amp;c.timeoutCount, 1)
+		c.RLock()
+		client, ok := c.clients[msg.clientID]
+		c.RUnlock()
+		if ok {
+			client.TimedOutMessage()
+		}
+		c.doRequeue(msg)
+	}
+
+exit:
+	return dirty
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;processInFlightQueue&lt;/code&gt;取出&lt;code&gt;inFlightPQ&lt;/code&gt;顶部的消息，如果当前消息已经超时，则将消息从队列中移除，并返回消息。
+由于队列是优先级队列，所以如果&lt;code&gt;processInFlightQueue&lt;/code&gt;取出的消息为空，则不需要再往后取了，直接返回false表示当前非dirty状态。
+如果取到了消息，则说明该消息投递超时，需要把消息传入&lt;code&gt;doRequeue&lt;/code&gt;立即重新投递。&lt;/p&gt;
+
+&lt;p&gt;二是处理deferred消息&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+func (c *Channel) processDeferredQueue(t int64) bool {
+	c.exitMutex.RLock()
+	defer c.exitMutex.RUnlock()
+
+	if c.Exiting() {
+		return false
+	}
+
+	dirty := false
+	for {
+		c.deferredMutex.Lock()
+		item, _ := c.deferredPQ.PeekAndShift(t)
+		c.deferredMutex.Unlock()
+
+		if item == nil {
+			goto exit
+		}
+		dirty = true
+
+		msg := item.Value.(*Message)
+		_, err := c.popDeferredMessage(msg.ID)
+		if err != nil {
+			goto exit
+		}
+		c.doRequeue(msg)
+	}
+
+exit:
+	return dirty
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;该处理流程与处理inFlight基本相同，不再详述。&lt;/p&gt;
+
+&lt;h1 id=&#34;其他操作:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;其他操作&lt;/h1&gt;
+
+&lt;p&gt;Channel中还有些其他函数如
+&lt;code&gt;Exiting&lt;/code&gt;、&lt;code&gt;Delete&lt;/code&gt;、&lt;code&gt;Close&lt;/code&gt;、&lt;code&gt;exit&lt;/code&gt;、&lt;code&gt;Empty&lt;/code&gt;、&lt;code&gt;flush&lt;/code&gt;、&lt;code&gt;Pause&lt;/code&gt;、&lt;code&gt;UnPause&lt;/code&gt;、&lt;code&gt;doPause&lt;/code&gt;
+等与Topic中很接近，不再详述。&lt;code&gt;AddClient&lt;/code&gt;和&lt;code&gt;RemoveClient&lt;/code&gt;将在分析Client时讨论。&lt;/p&gt;
+
+&lt;h1 id=&#34;总结:b8a36880ebd977f3b5cea4ba6491a0d5&#34;&gt;总结&lt;/h1&gt;
+
+&lt;p&gt;Topic/Channel是发布/订阅模型的一种实现。Topic对应于发布，Channel对应于订阅。
+消费者通过在Topic下生成不同的Channel来接收来自该Topic的消息。
+通过生成相同的Channel来实现消费者负载均衡。&lt;/p&gt;
+
+&lt;p&gt;Channel本身在投递消息给消费者时维护两个队列，一个是inFlight队列，该队列存储正在投递，但还没被标记为投递成功的消息。
+另一个是deferred队列，用来存储需要被延时投递的消息。&lt;/p&gt;
+
+&lt;p&gt;inFlight队列中消息可能因为投递超时而失败，deferred队列中的消息需要在到达指定时间后进行重新投递。
+如果为两个队列中的每个消息都分别指定定时器，无疑是非常消耗资源的。因此nsq采用定时扫描队列的做法。
+在扫描时采用多个worker分别处理。这种类似多线程的处理方式提高了处理效率。
+nsq在扫描策略上使用了Redis的probabilistic expiration算法，同时动态调整worker的数量，
+这些优化平衡了效率和资源占用。&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>nsq源码阅读笔记之nsqd（三）——diskQueue</title>
